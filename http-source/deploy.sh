@@ -4,7 +4,7 @@
 PACKAGE_NAME="infinyon-http-source-0.4.3"
 PACKAGE_IPKG=${PACKAGE_NAME}.ipkg
 HTTP_SOURCE_DIR="."
-LOG_DEPLOY="deploy.txt"
+# LOG_DEPLOY="deploy.txt"
 #func to deploy topic
 deploy_configurations() {
 	for file in ${HTTP_SOURCE_DIR}/*.yaml; do
@@ -44,7 +44,7 @@ create_topics() {
 
 # main script execution func call
 #create topic
-create_topics >> ${LOG_DEPLOY}
+create_topics
 #deploy with config
 deploy_configurations
 

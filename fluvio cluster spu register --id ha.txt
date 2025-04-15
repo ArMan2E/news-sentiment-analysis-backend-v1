@@ -1,0 +1,33 @@
+run with bun !!!! not npm or nodemon
+check 8080 port if on/ or not  netstat -ano | findstr ":8080" 
+ ss -ltnp | grep 8080
+
+
+fluvio topic name must be lower case alphanumeric and can have "-"
+fluvio cluster
+fluvio profile
+fluvio topic
+fluvio smartmodule -> to map / filter records inside topic (transforms -t)
+fluvio connector -> source and sink
+
+cdk -> 
+
+
+fluvio cluster spu register --id hackzard --public-server 0.0.0.0:9010 --private-server 0.0.0.0:9011
+
+
+steps for fluvio:->
+1. start/ resume / check/ shutdown/ fluvio cluster if starting after shutdown run resumt
+2. check for topics in the cluster -> fluvio topic list
+3. if using any cdk from fluvio hub like http source use ->
+	cdk deploy list to check if the connectors is deployed if not ->
+	cdk deploy start --ipkg infinyon-http-source-0.4.3.ipkg --config ./<CONFIG-NAME>.yaml
+3. consume or produce records !!!
+ to consume json
+	-> fluvio consume -t ./transform-rss-json/transforms.yaml <TOPIC-NAME>
+
+{
+	title: ...,
+	approxTraffic: ...,
+	news: [ {title"", source:""}, {title"", source:""}, {title"", source:""} ]
+}

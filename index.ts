@@ -2,118 +2,98 @@ import Express from "express";
 import cors from "cors";
 import { Offset, SmartModuleType } from "@fluvio/client";
 import { fluvio, fluvioClient } from "./lib/fluvio";
-import transformTrendData from "./lib/transformJson";
-import { analyzeNewsWithQroq } from "./sentiment-groq.ts";
-import { INSPECT_MAX_BYTES } from "buffer";
+import transformTrendData from "./util/transformRssToJson/transformGoogleRSSJson.ts";
+import { analyzeNewsWithQroq } from "./util/sentiment-groq.ts";
+import googleTrendsNews from "./src/newsCategory/googleTrendsNews.ts";
+import economicTimeBusinessNews from "./src/newsCategory/economicTimeBusinessNews.ts";
+import timesOfIndiaScienceNews from "./src/newsCategory/timesOfIndiaScienceNews.ts";
+import timesOfIndiaTechnologyNews from "./src/newsCategory/theHinduTechnologyNews.ts";
+import theHinduTechnologyNews from "./src/newsCategory/theHinduTechnologyNews.ts";
+import theHinduHealthNews from "./src/newsCategory/theHinduHealthNews.ts";
+import newsCategoryRouter from "./src/routes/newsCategoryRoute.ts";
 
 process.on("unhandledRejection", (reason) => {
   console.error("Unhandled rejection", reason);
 });
-const PORT = process.env.PORT || 8080;
-const PARTITION = 0;
+const PORT: number = Number(process.env.PORT) || 8080; // convert to number as .env is of type string, Number() is a constructor
+const HOST = process.env.HOST_NAME || "0.0.0.0";
+
 const app = Express();
+
 app.use(
   cors({
     origin: "*",
   })
 );
 
-app.use(cors());
+/**
+ * End point /stream/news/:category
+ *  category -> case or if else?? using Map in ts that is Record of <string, () => AsyncGenerator<any>> as using SSE with yield
+ *  string type is the name of category breaking, science, tech, health
+ *  BREAKING -> consume from rss-google-trends-topic in src/breaking.ts -> move the try catch block and just return the reponse from there
+ *  
+ *
+ */
+// app.get("/stream/:news", async (req, res) => {
+//   console.log("Inside the endpoint /stream/news");
 
-app.get("/stream/news", async (req, res) => {
-  console.log("Inside the endpoint /stream/news");
+//   res.setHeader("Access-Control-Allow-Origin", "*");
+//   res.setHeader("Cache-Control", "no-cache");
+//   res.setHeader("Content-Type", "text/event-stream");
+//   res.setHeader("Connection", "keep-alive");
+//   res.setHeader("X-Accel-Buffering", "no");
+//   res.flushHeaders(); // Flush headers immediately to client to let it know about "Content-Type"
+//   //let responseMsg: Promise<string | undefined>; // declare outside case block
+//   try {
+//     //responseMsg = await googleTrendsNews(); // again stringify
 
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Connection", "keep-alive");
-  res.setHeader("X-Accel-Buffering", "no");
-  res.flushHeaders(); // Flush headers immediately
 
-  try {
-    const topic = "google-trends-rss-topic";
-    console.log("Connecting to Fluvio...");
-    const client = await fluvio.connect();
-    const consumer = await client.partitionConsumer(topic, PARTITION);
+//     for await (const record of googleTrendsNews()) {
+//       res.write(`data: ${JSON.stringify(record)}\n\n`);
+//     }
 
-    const jsonStreamRecord = await consumer.streamWithConfig(Offset.FromEnd(), {
-      smartmoduleType: SmartModuleType.Map,
-      smartmoduleName: "fluvio/rss-json@0.1.0", // Make sure this SmartModule is registered
-    });
+//     for await (const record of economicTimeBusinessNews()) {
+//       res.write(`data: ${JSON.stringify(record)}\n\n`);
+//     }
 
-    for await (const record of jsonStreamRecord) {
-      const raw = record.valueString();
-      const parsedData = JSON.parse(raw); // parse the raw data
-      // transform the data !!
-      // .items is an array in the parsedData which contains the actual links and data it is mapped then
-      const cleanedData = parsedData.items.map(transformTrendData);
+//     // for await (const record of timesOfIndiaScienceNews()) {
+//     //   console.log(JSON.stringify(record));
+//     //   // each event must end with \n\n double newline
+//     //   res.write(`data: ${JSON.stringify(record)}\n\n`);
+//     // }
+//     // for await (const record of theHinduTechnologyNews()) {
+//     //   console.log(JSON.stringify(record));
+//     //   // each event must end with \n\n double newline
+//     //   res.write(`data: ${JSON.stringify(record)}\n\n`);
+//     // }
+//     // for await (const record of theHinduHealthNews()) {
+//     //   console.log(JSON.stringify(record));
+//     //   // each event must end with \n\n double newline
+//     //   res.write(`data: ${JSON.stringify(record)}\n\n`);
+//     // }
 
-      //const responseMsg = `data: ${JSON.stringify(cleanedData)}\n\n`; // again stringify
+//     //res.write(responseMsg); // write to response
+//     req.on("close", () => {
+//       console.log("Client disconnected from SSE");
+//       res.end();
+//     });
+//   } catch (error) {
+//     console.error("Failed to stream news:", error);
+//     res.write(
+//       `event: error\ndata: ${JSON.stringify({ error: "Streaming failed" })}\n\n`
+//     );
+//     res.end();
+//   }
+// });
 
-      /**
-       * GROQ works ???
-       */
-      const analyzedTrends = await Promise.all(
-        cleanedData.map(async (item: any) => {
-          try {
-            // const firstNews =
-            //   item.news[0].title + item.news[1].title + item.news[2].title;
-          // add first three title of news array  
-          const firstNews = item.news
-            .slice(0, 3)
-            .map((n: any) => n.title)
-            .join(" ");
-
-            const groqResult = await analyzeNewsWithQroq(
-              item.title,
-              item?.source || "Unknown",
-              firstNews || ""
-            );
-            // analyzes each titles -> more api call !!!!!! unnecssary
-            // const groqResult = await Promise.all(
-            //   allNews.map(async (newsItem: any) => {
-            //     return await analyzeNewsWithQroq(
-            //       item.title,
-            //       newsItem.title || ""
-            //     );
-            //   })
-            return { ...item, groqAnalysis: groqResult }; // return item yes to get the links and the source???
-            //return { ...groqResult }; // return item ???
-          } catch (error) {
-            console.warn("Failure to analyze with groq...", error);
-            return {
-              sentiment: "unknown",
-              mood: "unknown",
-              summary: "",
-              reasoning: "Analysis failed",
-            };
-          }
-        })
-      );
-
-      //-------------------
-      const responseMsg = `data: ${JSON.stringify(analyzedTrends)}\n\n`; // again stringify
-
-      console.log("Sending record:");
-      res.write(responseMsg); // write to response
-    }
-
-    req.on("close", () => {
-      console.log("Client disconnected from SSE");
-      res.end();
-    });
-  } catch (error) {
-    console.error("Failed to stream news:", error);
-    res.status(500).json({ error: "Failed to stream news." });
-  }
-});
-
+app.use("/stream/news", newsCategoryRouter);
+// test endpoint
 app.get("/ping", (_, res) => {
   console.log("Ping route hit !!");
   res.send("pong");
 });
 
 // if bun is not running after server running... error -> change port
-app.listen(8083, "0.0.0.0", () => {
+app.listen(PORT, HOST, () => {
   console.log(`Server running...`);
 });

@@ -11,7 +11,7 @@ import timesOfIndiaTechnologyNews from "./src/newsCategory/theHinduTechnologyNew
 import theHinduTechnologyNews from "./src/newsCategory/theHinduTechnologyNews.ts";
 import theHinduHealthNews from "./src/newsCategory/theHinduHealthNews.ts";
 import newsCategoryRouter from "./src/routes/newsCategoryRoute.ts";
-
+import compression from "compression";
 process.on("unhandledRejection", (reason) => {
   console.error("Unhandled rejection", reason);
 });
@@ -25,6 +25,7 @@ app.use(
     origin: "*",
   })
 );
+//app.use(compression());
 
 /**
  * End point /stream/news/:category
@@ -86,7 +87,9 @@ app.use(
 //   }
 // });
 
-app.use("/stream/news", newsCategoryRouter);
+
+app.use("/stream/news", newsCategoryRouter); // path -> /stream/news/:category
+
 // test endpoint
 app.get("/ping", (_, res) => {
   console.log("Ping route hit !!");
@@ -95,5 +98,5 @@ app.get("/ping", (_, res) => {
 
 // if bun is not running after server running... error -> change port
 app.listen(PORT, HOST, () => {
-  console.log(`Server running...`);
+  console.log(`Server running... on port-> ${PORT}`);
 });

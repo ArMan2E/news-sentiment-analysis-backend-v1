@@ -1,0 +1,16 @@
+#i have changed the port to 0.0.0.0:9009 for local cluster
+#Connector runs with process id: 84874
+#Started connector `google-trends-rss`
+apiVersion: 0.1.0
+meta:
+  version: 0.4.3
+  name: rss-google-trends
+  type: http-source
+  topic: rss-google-trends-topic
+  create-topic: true
+
+http:
+  endpoint: "https://trends.google.com/trending/rss?geo=IN"
+  method: GET
+  interval: 10s
+

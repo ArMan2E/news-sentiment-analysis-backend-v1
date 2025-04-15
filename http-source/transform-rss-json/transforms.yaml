@@ -1,0 +1,2 @@
+transforms:
+  - uses: fluvio/rss-json@0.1.0

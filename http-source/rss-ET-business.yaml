@@ -1,0 +1,13 @@
+#topic
+apiVersion: 0.1.0
+meta:
+  version: 0.4.3
+  name: rss-ET-business
+  type: http-source
+  topic: rss-et-business-topic
+  create-topic: true
+
+http:
+  endpoint: 'https://economictimes.indiatimes.com/prime/technology-and-startups/rssfeeds/63319172.cms'
+  method: GET
+  interval: 30s

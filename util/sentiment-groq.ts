@@ -29,79 +29,82 @@ export function cleanJsonResponse(response: string): string {
   return jsonMatch[0];
 }
 
-
+// return type is Promise
 export async function analyzeNewsWithQroq(
   title: string,
   source: string,
   content: string = ""
 ): Promise<GroqAnalysisResult> {
   const promptSystem = `
-You are a multilingual media analysis expert specializing in emotion, bias, and language framing.
+    You are a multilingual media analysis expert specializing in emotion, bias, and language framing.
 
-Given the following news input from user, analyze it and return a well-structured JSON object with:
+    Given the following news input from user, analyze it and return a well-structured JSON object with:
+    From the given input Content and Title generate the summary give atleast 50 to 50 words in concise summary 
 
-1. language
-2. summary
-3. sentiment
-4. mood
-5. bias_level
-6. bias_direction
-7. subjectivity
-8. indicators
-9. reasoning
+    1. language
+    2. summary
+    3. sentiment
+    4. mood
+    5. bias_level
+    6. bias_direction
+    7. subjectivity
+    8. indicators
+    9. reasoning
 
-Input:
-Title: "${title}"
-Source: ${source}
-Content: "${content}"
+    Input:
+    Title: "${title}"
+    Source: ${source}
+    Content: "${content}"
 
-Return your analysis strictly in JSON format with the exact keys:
+    Return your analysis strictly in JSON format with the exact keys:
 
-{
-  "language": "...",
-  "summary": "...",
-  "sentiment": "...",
-  "mood": "...",
-  "bias_level": "...",
-  "bias_direction": "...",
-  "subjectivity": ...,
-  "indicators": ["...", "..."],
-  "reasoning": "..."
-}`;
+    {
+      "language": "...",
+      "summary": "...",
+      "sentiment": "...",
+      "mood": "...",
+      "bias_level": "...",
+      "bias_direction": "...",
+      "subjectivity": ...,
+      "indicators": ["...", "..."],
+      "reasoning": "..."
+    }`;
+
   const promptUser = `
-You are a multilingual media analysis expert specializing in emotion, bias, and language framing.
+    You are a multilingual media analysis expert specializing in emotion, bias, and language framing.
 
-Given the following news input from user, analyze it and return a well-structured JSON object with:
+    Given the following news input from user, analyze it and return a well-structured JSON object with:
+    From the given input Content and Title generate the summary give atleast 50 to 50 words in concise summary 
 
-1. language
-2. summary
-3. sentiment
-4. mood
-5. bias_level
-6. bias_direction
-7. subjectivity
-8. indicators
-9. reasoning
+    1. language
+    2. summary
+    3. sentiment
+    4. mood
+    5. bias_level
+    6. bias_direction
+    7. subjectivity
+    8. indicators
+    9. reasoning
 
-Input:
-Title: "${title}"
-Source: ${source}
-Content: "${content}"
+    Input:
+    Title: "${title}"
+    Source: ${source}
+    Content: "${content}"
 
-"response_format" : {"type": "json_object:}
-Return your analysis strictly in JSON format with the exact keys:
+    "response_format" : {"type": "json_object:}
+    Return your analysis strictly in JSON format with the exact keys:
 
-{
-  "language": "...",
-  "summary": "...",
-  "sentiment": "...",
-  "mood": "...",
-  "bias_level": "...",
-  "bias_direction": "...",
-  "subjectivity": ...,
-  "indicators": ["...", "..."],
-  "reasoning": "..."
-}`;
+    {
+      "language": "...",
+      "summary": "...",
+      "sentiment": "...",
+      "mood": "...",
+      "bias_level": "...",
+      "bias_direction": "...",
+      "subjectivity": ...,
+      "indicators": ["...", "..."],
+      "reasoning": "..."
+    }`;
   //console.log(process.env.GROQ_API_KEY);
   try {
     const response = await groq.chat.completions.create({
@@ -135,9 +138,9 @@ Return your analysis strictly in JSON format with the exact keys:
     // );
     const rawContent = response.choices[0]?.message?.content?.trim(); // groq documentation
     if (!rawContent) throw new Error("Groq not returned anything");
-		//console.log(response.choices[0]?.message?.content);
-		const cleanContent = cleanJsonResponse(rawContent);
-		console.log(cleanContent);
+    //console.log(response.choices[0]?.message?.content);
+    const cleanContent = cleanJsonResponse(rawContent);
+    console.log(cleanContent);
     return JSON.parse(cleanContent);
   } catch (error: any) {
     console.error("Groq error", error.response?.data || error.message);

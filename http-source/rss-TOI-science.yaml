@@ -1,0 +1,13 @@
+apiVersion: 0.1.0
+
+meta:
+  version: 0.4.3
+  name: rss-TOI-science
+  type: http-source
+  topic: rss-toi-science-topic
+  create-topic: true
+
+http:
+  endpoint: 'https://timesofindia.indiatimes.com/rssfeeds/-2128672765.cms'
+  method: GET
+  interval: 30s

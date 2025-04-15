@@ -20,7 +20,10 @@ const newsCategoryMap: Record<string, () => AsyncGenerator<any>> = {
 
 export const newsCategory = async (req:Request , res: Response) => {
 	// extract the category
-	const category = req.params.category.toLowerCase(); // cause map's key is lc
+  // params is stream/news/science or /technology req.params.category
+  // query is new?category=science or can use comma seperated like science,technology need run parallel stream
+  // req.query.category
+	const category = req.params.category.toLowerCase(); // cause map's key is in lc
   console.log(`Inside the endpoint /stream/${category}`);
 
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -38,10 +41,12 @@ export const newsCategory = async (req:Request , res: Response) => {
 		res.end();
 		return;
 	}
+  
 	try {
 		for await (const record of streamCategoryFn()){
 			// proper SSE format -> ends with \n\n double newline
 			res.write(`data: ${JSON.stringify(record)}\n\n`);
+      res.flush
 		}
 
     //responseMsg = await googleTrendsNews(); // again stringify

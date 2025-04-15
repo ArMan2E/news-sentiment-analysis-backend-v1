@@ -1,0 +1,12 @@
+apiVersion: 0.1.0
+meta:
+  version: 0.4.3
+  name: rss-TH-health
+  type: http-source
+  topic: rss-th-health-topic
+  create-topic: true
+
+http:
+  endpoint: 'https://www.thehindu.com/sci-tech/health/feeder/default.rss'
+  method: GET
+  interval: 30s

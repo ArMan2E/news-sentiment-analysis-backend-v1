@@ -1,14 +1,15 @@
 import { fluvio } from "../../lib/fluvio";
-import { SmartModuleType, Offset } from "@fluvio/client";
+import { SmartModuleType, Offset } from "@fluvio/client"
 import { analyzeNewsWithQroq } from "../../util/sentiment-groq";
 import transformETBusinessData from "../../util/transformRssToJson/transformETBusinessRSSJson";
+import { CleanedNews } from "../../util/transformRssToJson/transformETBusinessRSSJson";
 const PARTITION = 0;
 // the pointer is important it signifies generator function to yield SSE
 export default async function* economicTimeBusinessNews() {
   // name of the topic
   const topic = "rss-et-business-topic";
 
-  console.log("Connecting to Fluvio...");
+  console.log("Connecting to Fluvio...",topic);
   const client = await fluvio.connect();
   const consumer = await client.partitionConsumer(topic, PARTITION);
 
@@ -17,18 +18,40 @@ export default async function* economicTimeBusinessNews() {
     smartmoduleName: "fluvio/rss-json@0.1.0", // Make sure this SmartModule is registered/ present
   });
 
-	
+
   for await (const record of jsonStreamRecord) {
     try {
       const raw = record.valueString();
-      const parsedData = JSON.parse(raw); 
-			//console.log(parsedData);
-			// parse the raw data
+      const parsedData = JSON.parse(raw);
+      //console.log(parsedData);
+      // parse the raw data
       //const stringified = JSON.stringify(parsedData);
-			// returning object according to transform .ts ...need to stringify again
-			const cleanedETBusinessData = transformETBusinessData(parsedData);
-			console.log(cleanedETBusinessData);
-			yield cleanedETBusinessData;
+      console.log(`Data ${JSON.stringify(parsedData)}`)
+      // returning object according to transform .ts ...need to stringify again
+      const cleanedETBusinessData = transformETBusinessData(parsedData);
+      const analyzedTrends = await Promise.all(
+
+        cleanedETBusinessData.news.map(async (item: CleanedNews) => {
+          try {
+            const groqResult = await analyzeNewsWithQroq(
+              item.title,
+              "Economic Times",
+              item?.description || ""
+            );
+            return { ...item, groqAnalysis: groqResult }
+          } catch (error) {
+            console.warn("Failure to analyze with groq...", error);
+            return {
+              sentiment: "unknown",
+              mood: "unknown",
+              summary: "",
+              reasoning: "Analysis failed",
+            }
+          }
+        })
+      )
+      console.log(analyzedTrends);
+      yield analyzedTrends;
     } catch (error) {
       console.error("Failed to parse record:", error);
     }

@@ -3,6 +3,7 @@ import { SmartModuleType, Offset } from "@fluvio/client";
 import { analyzeNewsWithQroq } from "../../util/sentiment-groq";
 import transformTOIScienceData from "../../util/transformRssToJson/transformTOIScienceRssJson";
 import transformThTechnologyData from "../../util/transformRssToJson/transformThTechnologyRSSJson";
+import { CleanedNewsStruct } from "../../util/transformRssToJson/transformThTechnologyRSSJson";
 const PARTITION = 0;
 // the pointer is important it signifies generator function to yield SSE
 export default async function* theHinduTechnologyNews() {
@@ -28,7 +29,27 @@ export default async function* theHinduTechnologyNews() {
       // returning object according to transform .ts ...need to stringify again
       const cleanedThTechnologyData = transformThTechnologyData(parsedData); // sending the js parsed to js obj data for transformation to js obj
       //console.log(stringified);
-      yield cleanedThTechnologyData;
+      const analyzedTrends = await Promise.all(
+        cleanedThTechnologyData.news.map(async (item: CleanedNewsStruct) => {
+          try {
+            const groqResult = await analyzeNewsWithQroq(
+              item.title,
+              "The Hindu",
+              item?.description || ""
+            );
+            return {...item, groqAnalysis: groqResult};``
+          } catch (error) {
+            console.warn("Failure to analyze with groq...", error);
+            return {
+              sentiment: "unknown",
+              mood: "unknown",
+              summary: "",
+              reasoning: "Analysis failed",
+            }
+          }
+        })
+      )
+      yield analyzedTrends;
     } catch (error) {
       console.error("Failed to parse record:", error);
     }

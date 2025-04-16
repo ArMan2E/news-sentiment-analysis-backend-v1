@@ -11,7 +11,7 @@
     ],
     "target": "ESNext",
     "moduleDetection": "force",
-    "jsx": "react-jsx",
+    //"jsx": "react-jsx",
     "allowJs": true,
     "outDir": "dist",    
     // Bundler mode

@@ -1,5 +1,4 @@
 import Fluvio from "@fluvio/client";
-
 const fluvio = new Fluvio();
 // connect to fluvio cluster fluvio.connect()
 const fluvioClient = async () => await fluvio.connect();

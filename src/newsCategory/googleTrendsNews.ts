@@ -4,6 +4,7 @@ import transformTrendData from "../../util/transformRssToJson/transformGoogleRSS
 import { analyzeNewsWithQroq } from "../../util/sentiment-groq";
 const PARTITION = 0;
 
+// no try scatch !!!!
 export default async function* googleTrendsNews() {
   const topic = "rss-google-trends-topic";
   console.log("Connecting to Fluvio...");

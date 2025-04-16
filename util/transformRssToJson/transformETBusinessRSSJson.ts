@@ -1,7 +1,7 @@
 interface CleanedNewsItems {
 	news : CleanedNews [];
 }
-interface CleanedNews {
+export interface CleanedNews {
   description: string;
   title: string;
   pubDate: string;

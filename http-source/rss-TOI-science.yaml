@@ -10,4 +10,4 @@ meta:
 http:
   endpoint: 'https://timesofindia.indiatimes.com/rssfeeds/-2128672765.cms'
   method: GET
-  interval: 30s
+  interval: 1m

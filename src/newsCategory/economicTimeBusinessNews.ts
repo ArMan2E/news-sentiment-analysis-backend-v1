@@ -1,5 +1,4 @@
-import { fluvio } from "../../lib/fluvio";
-import { SmartModuleType, Offset } from "@fluvio/client"
+import { connectAndStream, fluvio } from "../../lib/fluvio";
 import { analyzeNewsWithQroq } from "../../util/sentiment-groq";
 import transformETBusinessData from "../../util/transformRssToJson/transformETBusinessRSSJson";
 import { CleanedNews } from "../../util/transformRssToJson/transformETBusinessRSSJson";
@@ -9,15 +8,16 @@ export default async function* economicTimeBusinessNews() {
   // name of the topic
   const topic = "rss-et-business-topic";
 
-  console.log("Connecting to Fluvio...",topic);
-  const client = await fluvio.connect();
-  const consumer = await client.partitionConsumer(topic, PARTITION);
+  // console.log("Connecting to Fluvio...",topic);
+  // const client = await fluvio.connect();
+  // const consumer = await client.partitionConsumer(topic, PARTITION);
 
-  const jsonStreamRecord = await consumer.streamWithConfig(Offset.FromEnd(), {
-    smartmoduleType: SmartModuleType.Map,
-    smartmoduleName: "fluvio/rss-json@0.1.0", // Make sure this SmartModule is registered/ present
-  });
+  // const jsonStreamRecord = await consumer.streamWithConfig(Offset.FromEnd(), {
+  //   smartmoduleType: SmartModuleType.Map,
+  //   smartmoduleName: "fluvio/rss-json@0.1.0", // Make sure this SmartModule is registered/ present
+  // });
 
+  const jsonStreamRecord = await connectAndStream(topic);
 
   for await (const record of jsonStreamRecord) {
     try {

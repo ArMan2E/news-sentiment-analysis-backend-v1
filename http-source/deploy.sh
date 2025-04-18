@@ -44,7 +44,7 @@ create_topics() {
 
 # main script execution func call
 #create topic
-create_topics
+#create_topics
 #deploy with config
 deploy_configurations
 

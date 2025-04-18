@@ -12,5 +12,5 @@ meta:
 http:
   endpoint: "https://trends.google.com/trending/rss?geo=IN"
   method: GET
-  interval: 10s
+  interval: 20s
 

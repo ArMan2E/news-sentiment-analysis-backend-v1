@@ -1,5 +1,6 @@
 import Fluvio from "@fluvio/client";
 const fluvio = new Fluvio();
+import { SmartModuleType, Offset } from "@fluvio/client";
 // connect to fluvio cluster fluvio.connect()
 const fluvioClient = async () => await fluvio.connect();
 
@@ -19,4 +20,16 @@ const createTopic = async (topic: string) => {
     console.error("Topic already exists ", error);
   }
 };
-export { fluvio, fluvioClient, createTopic };
+
+const connectAndStream = async (topic: string) => {
+  console.log("Connecting to Fluvio...",topic);
+  const client = await fluvio.connect();
+  const consumer = await client.partitionConsumer(topic, 0);
+  
+  const jsonStreamRecord = await consumer.streamWithConfig(Offset.FromEnd(), {
+    smartmoduleType: SmartModuleType.Map,
+    smartmoduleName: "fluvio/rss-json@0.1.0", // Make sure this SmartModule is registered/ present
+  });
+  return jsonStreamRecord
+}
+export { fluvio, fluvioClient, createTopic, connectAndStream };

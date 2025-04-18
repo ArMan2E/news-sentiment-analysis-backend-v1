@@ -10,4 +10,4 @@ meta:
 http:
   endpoint: 'https://economictimes.indiatimes.com/prime/technology-and-startups/rssfeeds/63319172.cms'
   method: GET
-  interval: 30s
+  interval: 1m

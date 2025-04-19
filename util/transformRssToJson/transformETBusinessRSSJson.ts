@@ -33,7 +33,7 @@ export default function transformETBusinessData(input: Item): CleanedNewsItems {
   //const newsItems: InputNewsItem [] = items?.items || [];
 	const newsItems: InputNewsItem [] = input?.items || [];
 
-  console.log(newsItems);
+  //console.log(newsItems);
   const cleandNewsArray: CleanedNews[] = newsItems.map(
     (inputNews) => {
       // for each inputNews return type is CleanedNews and inputnews type si InputNewsItem

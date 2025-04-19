@@ -9,7 +9,7 @@ import { Request, Response } from "express";
 
 
 // record is a type of K,V map generatorFunc names with [function*]
-const newsCategoryMap: Record<string, () => AsyncGenerator<any>> = {
+const newsCategoryMap: Record<string, (signal: AbortSignal) => AsyncGenerator<any>> = {
   breaking: googleTrendsNews, // func name
   business: economicTimeBusinessNews,
   science: timesOfIndiaScienceNews,
@@ -26,14 +26,6 @@ export const newsCategory = async (req: Request, res: Response) => {
   const category = req.params.category.toLowerCase(); // cause map's key is in lc
   console.log(`Inside the endpoint /stream/news/${category}`);
 
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Connection", "keep-alive");
-  res.setHeader("X-Accel-Buffering", "no");
-  res.flushHeaders(); // Flush headers immediately to client to let it know about "Content-Type"
-  //let responseMsg: Promise<string | undefined>; // declare outside case block
-
   const streamCategoryFn = newsCategoryMap[category];
   // if category is not in the Record map then close the connection with error
   if (!streamCategoryFn) {
@@ -43,11 +35,40 @@ export const newsCategory = async (req: Request, res: Response) => {
     return;
   }
 
+  //SSE
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders(); // Flush headers immediately to client to let it know about "Content-Type"
+  //let responseMsg: Promise<string | undefined>; // declare outside case block
+
+  //let clientDisconnected = false;
+
+
+  const controller = new AbortController();
+  const {signal} = controller;
+
+  req.on("close", () => {
+    console.log("Client disconnected from SSE");
+    controller.abort("Client closed");;
+    res.end();
+  });
+
+  let lastSentHash = "";
+
   try {
-    for await (const record of streamCategoryFn()) {
+    for await (const record of streamCategoryFn(signal)) {
+      if (signal.aborted) break;
       // proper SSE format -> ends with \n\n double newline
-      res.write(`data: ${JSON.stringify(record)}\n\n`);
-      res.flush();
+      const currentHash = JSON.stringify(record);
+      if (currentHash !== lastSentHash) {
+        res.write(`data: ${currentHash}\n\n`);
+        lastSentHash = currentHash;
+      }
+      // add delay
+      await new Promise((resolve) => setTimeout(resolve, 10000)); // 10s delay
     }
 
   } catch (error) {
@@ -58,9 +79,9 @@ export const newsCategory = async (req: Request, res: Response) => {
     res.end();
   }
 
-  // on req closed
-  req.on("close", () => {
-    console.log("Client disconnected from SSE");
-    res.end();
-  });
+  // // on req closed
+  // req.on("close", () => {
+  //   console.log("Client disconnected from SSE");
+  //   res.end();
+  // });
 };

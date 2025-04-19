@@ -14,16 +14,57 @@ export interface GroqAnalysisResult {
 
 // Rotate through available Groq API keys
 const groqApiKeys: string[] = process.env.GROQ_API_KEYS?.split(",") || [];
+//let keyUsageCount: number[] = new Array(groqApiKeys.length).fill(0);// init the token count with 0
+
+//buffer api key for a failed req ???
+let bufferGroqApiKeys: string[];
 let currentKeyIndex = 0;
+
+//const MAX_REQ_BEFORE_ROTATION = 10;
+
+async function preflightCheckForKey(apiKey: string): Promise<number> {
+  const model = "llama3-70b-8192"
+  try {
+    const response = await axios.get(`https://api.groq.com/openai/v1/models/${model}`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        }
+      }
+    )
+    const remainingTokensPerDay = parseInt(response.headers["x-ratelimit-limit-tokens"])
+    return remainingTokensPerDay;
+  } catch(error){
+    console.error(`failed to check rate limit for API KEY ${apiKey}`);
+    return 0;// if preflight failed, key unavailable fro groq
+  }
+}
+
+async function getLeastUsedKey(): Promise<string> {
+  // returns obj of type {apikey, remainingTokens, index}
+  const tokenUsages = await Promise.all(
+    groqApiKeys.map(async (apiKey, index) => {
+      const remainingTokens = await preflightCheckForKey(apiKey);
+      return {apiKey, remainingTokens, index};
+    })
+  )
+
+  // sort keys by remaining tokens in desending order
+  tokenUsages.sort((a,b) => b.remainingTokens - a.remainingTokens);
+  const selectedKey = tokenUsages[0];// key with most remaining tokens
+  bufferGroqApiKeys = tokenUsages.map(apiKey => apiKey.apiKey);
+  return selectedKey.apiKey;
+}
 console.log(`groq api keys ${groqApiKeys.length}`);
 if (groqApiKeys.length === 0) {
   throw new Error("No Groq API keys configured. Please set GROQ_API_KEYS in .env");
 }
 
-// kind of circular queue global const groqApikeys hence no need for a call variable
 function getNextApiKey() {
-  currentKeyIndex = (currentKeyIndex + 1) % groqApiKeys.length;
-  return groqApiKeys[currentKeyIndex];
+  // from second(2) api key as first one is least used already by preflight
+  currentKeyIndex = (currentKeyIndex + 2) % groqApiKeys.length;
+  return bufferGroqApiKeys[currentKeyIndex];
 }
 
 export async function analyzeNewsWithQroq(
@@ -76,10 +117,11 @@ Return your analysis strictly in JSON format with the exact keys:
 
   let attempt = 0;
   const maxAttempts = groqApiKeys.length;
-  console.log("inside function", groqApiKeys[currentKeyIndex]);
-
+  console.log(`Attempt ${attempt + 1} using key index ${currentKeyIndex}: ${groqApiKeys[currentKeyIndex]}`);
+  let apiKey = await getLeastUsedKey();// perform preflight
   while (attempt < maxAttempts) {
-    const apiKey = groqApiKeys[currentKeyIndex];
+    //let apiKey = groqApiKeys[currentKeyIndex];
+
     try {
       const response = await axios.post(
         "https://api.groq.com/openai/v1/chat/completions",
@@ -97,9 +139,9 @@ Return your analysis strictly in JSON format with the exact keys:
 
       if (remainingTokens < 1500) {
         console.warn(`Low token ${remainingTokens} hit for key ${apiKey}. Switching next key...`);
-        getNextApiKey();
+        apiKey = getNextApiKey();
         attempt++;// Optional, can count this analysis as an attempt
-        
+
         await new Promise(res => setTimeout(res, 500)); // 0.5s delay before retry
 
         continue;// Retry with next key;
@@ -115,7 +157,8 @@ Return your analysis strictly in JSON format with the exact keys:
       const status = error.response?.status;
       //const headers = error.response?.headers || {};
       if (status === 429) {
-        getNextApiKey();
+        // from buffer array
+        apiKey = getNextApiKey();
         attempt++;// count this an attempt
         await new Promise(res => setTimeout(res, 500)); // 0.5s delay before retry
 

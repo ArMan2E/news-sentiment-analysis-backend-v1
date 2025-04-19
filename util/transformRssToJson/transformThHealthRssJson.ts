@@ -43,7 +43,7 @@ export default function transformThHealthData(input: Item): CleanedNews {
   //const newsItems: InputNewsItem [] = items?.items || [];
   const newsItems: InputNewsItem[] = input?.items || [];
 
-  console.log(newsItems);
+  //console.log(newsItems);
   const cleandNewsArray: CleanedNewsStruct [] = newsItems.map((inputNews) => {
     // for each inputNews return type is CleanedNews and inputnews type si InputNewsItem
     return {

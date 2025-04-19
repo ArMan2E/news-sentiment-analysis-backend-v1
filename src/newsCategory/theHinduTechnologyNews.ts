@@ -1,51 +1,51 @@
-import { fluvio } from "../../lib/fluvio";
-import { SmartModuleType, Offset } from "@fluvio/client";
 import { analyzeNewsWithQroq } from "../../util/sentiment-groq";
-import transformTOIScienceData from "../../util/transformRssToJson/transformTOIScienceRssJson";
 import transformThTechnologyData from "../../util/transformRssToJson/transformThTechnologyRSSJson";
 import { CleanedNewsStruct } from "../../util/transformRssToJson/transformThTechnologyRSSJson";
-const PARTITION = 0;
+import { connectAndStream } from "../../lib/fluvio";
+import { TTLCache } from "../../util/CacheUtil";
 // the pointer is important it signifies generator function to yield SSE
-export default async function* theHinduTechnologyNews() {
-  // name of the topic
+// TTL in millis
+const TTL_DURATION = 10 * 60 * 1000;
+
+const seenUrlsWithTimestamps = new TTLCache(TTL_DURATION);
+
+export default async function* theHinduTechnologyNews(signal: AbortSignal) {
   const topic = "rss-th-technology-topic";
-
-  console.log("Connecting to Fluvio...", topic);
-  const client = await fluvio.connect();
-  const consumer = await client.partitionConsumer(topic, PARTITION);
-
-  const jsonStreamRecord = await consumer.streamWithConfig(Offset.FromEnd(), {
-    smartmoduleType: SmartModuleType.Map,
-    smartmoduleName: "fluvio/rss-json@0.1.0", // Make sure this SmartModule is registered/ present
-  });
-
-  const seenUrls = new Set();
+  const jsonStreamRecord = await connectAndStream(topic);
 
   for await (const record of jsonStreamRecord) {
+    if (signal.aborted) {
+      console.log("Stream aborted.");
+      break;
+    }
+
     try {
       const raw = record.valueString();
       const parsedData = JSON.parse(raw);
-      //console.log(parsedData);
-      // parse the raw data
-      //const stringified = JSON.stringify(parsedData);
-      // returning object according to transform .ts ...need to stringify again
-      const cleanedThTechnologyData = transformThTechnologyData(parsedData); // sending the js parsed to js obj data for transformation to js obj
-      //console.log(stringified);
+      const cleanedThTechnologyData = transformThTechnologyData(parsedData);
+
+      // Clean up expired cache keys before processing this batch
+      seenUrlsWithTimestamps.cleanup();
+
       const analyzedTrends = await Promise.all(
         cleanedThTechnologyData.news.map(async (item: CleanedNewsStruct) => {
           try {
             const cacheKey = `${item.newsUrl}+${item.title}`;
-            if (seenUrls.has(cacheKey)) {
-              //console.log(`skipping duplicate news ${item.title}`);
-              return null;// skipp analysis dontuse continue cause inside map() use return null;              
+            
+            // Check if the news item is still within TTL
+            if (seenUrlsWithTimestamps.has(cacheKey)) {
+                return null; // Skip recently seen item              
             }
-            seenUrls.add(cacheKey);
+            seenUrlsWithTimestamps.set(cacheKey);
+
             const groqResult = await analyzeNewsWithQroq(
               item.title,
               "The Hindu",
               item?.description || ""
             );
-            return { ...item, groqAnalysis: groqResult }; ``
+
+            return { ...item, groqAnalysis: groqResult };
+
           } catch (error) {
             console.warn("Failure to analyze with groq...", error);
             return {
@@ -53,14 +53,15 @@ export default async function* theHinduTechnologyNews() {
               mood: "unknown",
               summary: "",
               reasoning: "Analysis failed",
-            }
+            };
           }
         })
-      )
-      //const filteredResults = analyzedTrends.filter(Boolean);
-      const filteredResults = analyzedTrends.filter(result => {
-        return result && result.sentiment !== 'unknown' && result.summary !== "";
-      })
+      );
+
+      const filteredResults = analyzedTrends.filter(result =>
+        result && result.sentiment !== "unknown" && result.summary !== ""
+      );
+
       if (filteredResults.length > 0) {
         yield filteredResults;
       }
@@ -69,3 +70,4 @@ export default async function* theHinduTechnologyNews() {
     }
   }
 }
+

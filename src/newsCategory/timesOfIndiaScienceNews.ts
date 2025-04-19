@@ -1,25 +1,24 @@
-import { fluvio } from "../../lib/fluvio";
-import { SmartModuleType, Offset } from "@fluvio/client";
 import { analyzeNewsWithQroq } from "../../util/sentiment-groq";
 import transformTOIScienceData from "../../util/transformRssToJson/transformTOIScienceRssJson";
 import { CleanedNews } from "../../util/transformRssToJson/transformTOIScienceRssJson";
+import { connectAndStream } from "../../lib/fluvio";
+import { TTLCache } from "../../util/CacheUtil";
 
-const PARTITION = 0;
 // the pointer is important it signifies generator function to yield SSE
-export default async function* timesOfIndiaScienceNews() {
+// abort signal to stop if client disconnects
+const TTL_DURATION = 10 * 60 * 1000;
+
+const seenUrlsWithTimestamps = new TTLCache(TTL_DURATION);
+export default async function* timesOfIndiaScienceNews(signal: AbortSignal) {
   // name of the topic
   const topic = "rss-toi-science-topic";
-
-  console.log("Connecting to Fluvio...", topic);
-  const client = await fluvio.connect();
-  const consumer = await client.partitionConsumer(topic, PARTITION);
-
-  const jsonStreamRecord = await consumer.streamWithConfig(Offset.FromEnd(), {
-    smartmoduleType: SmartModuleType.Map,
-    smartmoduleName: "fluvio/rss-json@0.1.0", // Make sure this SmartModule is registered/ present
-  });
+  const jsonStreamRecord = await connectAndStream(topic);
 
   for await (const record of jsonStreamRecord) {
+    if (signal.aborted) {
+      console.log("Stream aborted.");
+      break;
+    }
     try {
       const raw = record.valueString();
       const parsedData = JSON.parse(raw);
@@ -32,6 +31,15 @@ export default async function* timesOfIndiaScienceNews() {
         // news is the key of array of news of type CleanedNews
         cleanedTOIScienceData.news.map(async (item: CleanedNews) => {
           try {
+            const cacheKey = `${item.newsUrl}+${item.title}`;
+
+            // Check if the news item is still within TTL
+            if (seenUrlsWithTimestamps.has(cacheKey)) {
+              return null; // Skip recently seen item              
+            }
+
+            seenUrlsWithTimestamps.set(cacheKey);
+
             const groqResult = await analyzeNewsWithQroq(
               item.title,
               "Times Of India",

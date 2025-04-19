@@ -1,15 +1,23 @@
-import { connectAndStream, fluvio } from "../../lib/fluvio";
+import { connectAndStream } from "../../lib/fluvio";
 import { analyzeNewsWithQroq } from "../../util/sentiment-groq";
 import transformETBusinessData from "../../util/transformRssToJson/transformETBusinessRSSJson";
 import { CleanedNews } from "../../util/transformRssToJson/transformETBusinessRSSJson";
-const PARTITION = 0;
+import { TTLCache } from "../../util/CacheUtil";
+const TTL_DURATION = 10 * 60 * 1000;
+
+const seenUrlsWithTimestamps = new TTLCache(TTL_DURATION);
+
 // the pointer is important it signifies generator function to yield SSE
-export default async function* economicTimeBusinessNews() {
+
+export default async function* economicTimeBusinessNews(signal: AbortSignal) {
   const topic = "rss-et-business-topic";
   const jsonStreamRecord = await connectAndStream(topic);
-  const seenUrls = new Set();
 
   for await (const record of jsonStreamRecord) {
+    if (signal.aborted) {
+      console.log("Stream aborted.");
+      break;
+    }
     try {
       const raw = record.valueString();
       const parsedData = JSON.parse(raw);
@@ -25,11 +33,11 @@ export default async function* economicTimeBusinessNews() {
         cleanedETBusinessData.news.map(async (item: CleanedNews) => {
           try {
             const cacheKey = `${item.newsUrl}+${item.title}`;
-            if (seenUrls.has(cacheKey)) {
+            if (seenUrlsWithTimestamps.has(cacheKey)) {
               //console.log(`skipping duplicate news ${item.title}`);
               return null;// skipp analysis dontuse continue cause inside map() use return null;              
             }
-            seenUrls.add(cacheKey);
+            seenUrlsWithTimestamps.set(cacheKey);
 
             const groqResult = await analyzeNewsWithQroq(
               item.title,

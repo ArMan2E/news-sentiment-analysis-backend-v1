@@ -1,26 +1,27 @@
-import { fluvio } from "../../lib/fluvio";
-import { SmartModuleType, Offset } from "@fluvio/client";
 import { analyzeNewsWithQroq } from "../../util/sentiment-groq";
-import transformTOIScienceData from "../../util/transformRssToJson/transformTOIScienceRssJson";
 import transformThHealthData from "../../util/transformRssToJson/transformThHealthRssJson";
 import { CleanedNewsStruct } from "../../util/transformRssToJson/transformThHealthRssJson";
+import { connectAndStream } from "../../lib/fluvio";
+import { TTLCache } from "../../util/CacheUtil";
 const PARTITION = 0;
+const TTL_DURATION = 10 * 60 * 1000;
+
+const seenUrlsWithTimestamps = new TTLCache(TTL_DURATION);
+
+
 // the pointer is important it signifies generator function to yield SSE
-export default async function* theHinduHealthNews() {
+export default async function* theHinduHealthNews(signal: AbortSignal) {
   // name of the topic
   const topic = "rss-th-health-topic";
 
-  console.log("Connecting to Fluvio...", topic);
-  const client = await fluvio.connect();
-  const consumer = await client.partitionConsumer(topic, PARTITION);
+  const jsonStreamRecord = await connectAndStream(topic);
 
-  const jsonStreamRecord = await consumer.streamWithConfig(Offset.FromEnd(), {
-    smartmoduleType: SmartModuleType.Map,
-    smartmoduleName: "fluvio/rss-json@0.1.0", // Make sure this SmartModule is registered/ present
-  });
 
-  const seenUrls = new Set();
   for await (const record of jsonStreamRecord) {
+    if (signal.aborted) {
+      console.log("Stream aborted.");
+      break;
+    }
     try {
       const raw = record.valueString();
       const parsedData = JSON.parse(raw);
@@ -34,10 +35,12 @@ export default async function* theHinduHealthNews() {
         cleanedThHealthData.news.map(async (item: CleanedNewsStruct) => {
           try {
             const cacheKey = `${item.title}+${item.newsUrl}`;
-            if (seenUrls.has(cacheKey)) {
+            if (seenUrlsWithTimestamps.has(cacheKey)) {
               return null;
             }
-            seenUrls.add(cacheKey);
+            
+            seenUrlsWithTimestamps.set(cacheKey);
+
             const groqResult = await analyzeNewsWithQroq(
               item.title,
               "The Hindu",

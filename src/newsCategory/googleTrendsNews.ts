@@ -2,23 +2,23 @@ import { connectAndStream, fluvio } from "../../lib/fluvio";
 import { SmartModuleType, Offset } from "@fluvio/client";
 import transformTrendData from "../../util/transformRssToJson/transformGoogleRSSJson";
 import { analyzeNewsWithQroq } from "../../util/sentiment-groq";
+import { TTLCache } from "../../util/CacheUtil";
 const PARTITION = 0;
 
-// no try scatch !!!!
-export default async function* googleTrendsNews() {
-  const topic = "rss-google-trends-topic";
-  // console.log("Connecting to Fluvio...");
-  // const client = await fluvio.connect();
-  // const consumer = await client.partitionConsumer(topic, PARTITION);
+const TTL_DURATION = 10 * 60 * 1000;
 
-  // const jsonStreamRecord = await consumer.streamWithConfig(Offset.FromEnd(), {
-  //   smartmoduleType: SmartModuleType.Map,
-  //   smartmoduleName: "fluvio/rss-json@0.1.0", // Make sure this SmartModule is registered/ present
-  // });
+const seenUrlsWithTimestamps = new TTLCache(TTL_DURATION);
+
+// no try scatch !!!!
+export default async function* googleTrendsNews(signal: AbortSignal) {
+  const topic = "rss-google-trends-topic";
 
   const jsonStreamRecord = await connectAndStream(topic);
-  const seenUrls = new Set();
   for await (const record of jsonStreamRecord) {
+    if (signal.aborted) {
+      console.log("Stream aborted.");
+      break;
+    }
     const raw = record.valueString();
     const parsedData = JSON.parse(raw); // parse the raw data
     // transform the data !!
@@ -34,11 +34,11 @@ export default async function* googleTrendsNews() {
             .map((n: any) => n.title)
             .join(" ");
           const cacheKey = `${item.title}+${firstNews}`;
-          if (seenUrls.has(cacheKey)) {
+          if (seenUrlsWithTimestamps.has(cacheKey)) {
             console.log(`skipping duplicate trend ${item.title}`);
             return null;// skip analysis
           }
-          seenUrls.add(cacheKey);
+          seenUrlsWithTimestamps.set(cacheKey);
 
           const groqResult = await analyzeNewsWithQroq(
             item.title,

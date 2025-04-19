@@ -50,8 +50,13 @@ export default async function* timesOfIndiaScienceNews() {
         })
       );
 
+      const filteredResults = analyzedTrends.filter(result => {
+        return result && result.sentiment !== 'unknown' && result.summary !== "";
+      })
       //console.log(stringified);
-      yield analyzedTrends;
+      if (filteredResults.length > 0) {
+        yield filteredResults;
+      }
     } catch (error) {
       console.error("Failed to parse record:", error);
     }

@@ -18,7 +18,6 @@ export default async function* googleTrendsNews() {
 
   const jsonStreamRecord = await connectAndStream(topic);
   const seenUrls = new Set();
-  const news = [];
   for await (const record of jsonStreamRecord) {
     const raw = record.valueString();
     const parsedData = JSON.parse(raw); // parse the raw data
@@ -46,14 +45,6 @@ export default async function* googleTrendsNews() {
             item?.source || "Unknown",
             firstNews || ""
           );
-          // analyzes each titles -> more api call !!!!!! unnecssary
-          // const groqResult = await Promise.all(
-          //   allNews.map(async (newsItem: any) => {
-          //     return await analyzeNewsWithQroq(
-          //       item.title,
-          //       newsItem.title || ""
-          //     );
-          //   })
           return { ...item, groqAnalysis: groqResult }; // return item yes to get the links and the source???
           //return { ...groqResult }; // return item ???
         } catch (error) {
@@ -69,9 +60,11 @@ export default async function* googleTrendsNews() {
     );
 
     //-------------------
-    //const responseMsg = `data: ${JSON.stringify(analyzedTrends)}\n\n`;
     // filter out nulls
-    const filteredResults = analyzedTrends.filter(Boolean);
+    //const filteredResults = analyzedTrends.filter(Boolean);
+    const filteredResults = analyzedTrends.filter(result => {
+      return result && result.sentiment !== 'unknown' && result.summary !== "";
+    })
     if (filteredResults.length > 0) {
       yield filteredResults;
     }

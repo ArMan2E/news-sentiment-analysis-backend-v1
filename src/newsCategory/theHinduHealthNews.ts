@@ -19,6 +19,7 @@ export default async function* theHinduHealthNews() {
     smartmoduleName: "fluvio/rss-json@0.1.0", // Make sure this SmartModule is registered/ present
   });
 
+  const seenUrls = new Set();
   for await (const record of jsonStreamRecord) {
     try {
       const raw = record.valueString();
@@ -32,24 +33,36 @@ export default async function* theHinduHealthNews() {
       const analyzedTrends = await Promise.all(
         cleanedThHealthData.news.map(async (item: CleanedNewsStruct) => {
           try {
+            const cacheKey = `${item.title}+${item.newsUrl}`;
+            if (seenUrls.has(cacheKey)) {
+              return null;
+            }
+            seenUrls.add(cacheKey);
             const groqResult = await analyzeNewsWithQroq(
               item.title,
               "The Hindu",
               item?.description || "",
             )
             return { ...item, groqAnalysis: groqResult };
-          }catch (error){
-            console.warn("Failure to analyze with groq...", error) ;
+          } catch (error) {
+            console.warn("Failure to analyze with groq...", error);
             return {
               sentiment: "unknown",
               mood: "unknown",
-              summary:"",
-              reasoning:"Analysis failed",
+              summary: "",
+              reasoning: `Analysis failed for news ${item.description} because ${error}`,
             }
           }
         })
       )
-      yield analyzedTrends;
+      //console.log(analyzedTrends);
+     // const filteredResults = analyzedTrends.filter(Boolean);
+      const filteredResults = analyzedTrends.filter(result => {
+        return result && result.sentiment !== 'unknown' && result.summary !== "";
+      })
+      if (filteredResults.length > 0) {
+        yield filteredResults;
+      }
     } catch (error) {
       console.error("Failed to parse record:", error);
     }

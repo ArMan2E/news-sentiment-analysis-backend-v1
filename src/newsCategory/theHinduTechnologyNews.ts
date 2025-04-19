@@ -19,6 +19,8 @@ export default async function* theHinduTechnologyNews() {
     smartmoduleName: "fluvio/rss-json@0.1.0", // Make sure this SmartModule is registered/ present
   });
 
+  const seenUrls = new Set();
+
   for await (const record of jsonStreamRecord) {
     try {
       const raw = record.valueString();
@@ -32,12 +34,18 @@ export default async function* theHinduTechnologyNews() {
       const analyzedTrends = await Promise.all(
         cleanedThTechnologyData.news.map(async (item: CleanedNewsStruct) => {
           try {
+            const cacheKey = `${item.newsUrl}+${item.title}`;
+            if (seenUrls.has(cacheKey)) {
+              //console.log(`skipping duplicate news ${item.title}`);
+              return null;// skipp analysis dontuse continue cause inside map() use return null;              
+            }
+            seenUrls.add(cacheKey);
             const groqResult = await analyzeNewsWithQroq(
               item.title,
               "The Hindu",
               item?.description || ""
             );
-            return {...item, groqAnalysis: groqResult};``
+            return { ...item, groqAnalysis: groqResult }; ``
           } catch (error) {
             console.warn("Failure to analyze with groq...", error);
             return {
@@ -49,7 +57,13 @@ export default async function* theHinduTechnologyNews() {
           }
         })
       )
-      yield analyzedTrends;
+      //const filteredResults = analyzedTrends.filter(Boolean);
+      const filteredResults = analyzedTrends.filter(result => {
+        return result && result.sentiment !== 'unknown' && result.summary !== "";
+      })
+      if (filteredResults.length > 0) {
+        yield filteredResults;
+      }
     } catch (error) {
       console.error("Failed to parse record:", error);
     }

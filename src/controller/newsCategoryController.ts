@@ -24,7 +24,7 @@ export const newsCategory = async (req: Request, res: Response) => {
   // query is new?category=science or can use comma seperated like science,technology need run parallel stream
   // req.query.category
   const category = req.params.category.toLowerCase(); // cause map's key is in lc
-  console.log(`Inside the endpoint /stream/${category}`);
+  console.log(`Inside the endpoint /stream/news/${category}`);
 
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Cache-Control", "no-cache");
@@ -37,8 +37,9 @@ export const newsCategory = async (req: Request, res: Response) => {
   const streamCategoryFn = newsCategoryMap[category];
   // if category is not in the Record map then close the connection with error
   if (!streamCategoryFn) {
-    res.write(`event: error\ndata" ${JSON.stringify({ error: "Invlaid category" })}`)
-    res.end();
+    // res.status(400).json(`event: error\ndata" ${JSON.stringify({ error: "Invlaid category" })}`)
+    // res.end();
+    res.status(400).json({error: "Ivalid category"})
     return;
   }
 
@@ -46,7 +47,7 @@ export const newsCategory = async (req: Request, res: Response) => {
     for await (const record of streamCategoryFn()) {
       // proper SSE format -> ends with \n\n double newline
       res.write(`data: ${JSON.stringify(record)}\n\n`);
-      res.flush
+      res.flush();
     }
 
   } catch (error) {

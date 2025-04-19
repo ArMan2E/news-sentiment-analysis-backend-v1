@@ -36,13 +36,15 @@ export default function transformTOIScienceData(input: Item): CleanedNewsItems {
   //const newsItems: InputNewsItem [] = items?.items || [];
   const newsItems: InputNewsItem[] = input?.items || [];
 
-  console.log(newsItems);
-  const cleandNewsArray: CleanedNews[] = newsItems.map((inputNews) => {
+  //console.log(newsItems);
+  const cleandNewsArray: CleanedNews[] = newsItems
+  .filter((inputNews) => inputNews?.description )// filter news that doesnot have desciption
+  .map((inputNews) => {
     // for each inputNews return type is CleanedNews and inputnews type si InputNewsItem
     return {
 			// match any <img...> tag ignore attributes and whitespace case sensitive(i) golbal(g) remove all matches
 			// trim() to remove spaces if any
-      description: inputNews.description.replace(/<img[^>]*>/gi, "").trim()	,
+      description: inputNews?.description.replace(/<img[^>]*>/gi, "").trim()	,
       title: inputNews.title,
       pubDate: inputNews.pub_date,
       imageUrl: inputNews.enclosure.url,

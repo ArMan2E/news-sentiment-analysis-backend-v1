@@ -9,5 +9,5 @@ meta:
 http:
   endpoint: 'https://www.thehindu.com/sci-tech/technology/?service=rss'
   method: GET
-  interval: 1m
+  interval: 20s
 

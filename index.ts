@@ -1,7 +1,9 @@
 import Express from "express";
 import cors from "cors";
-import newsCategoryRouter from "./src/routes/newsCategoryRoute.ts";
-import compression from "compression";
+import saveNewsToDb from "./util/cron-job"
+// import newsCategoryRouter from "./src/routes/newsCategoryRoute.ts";
+import connectDb from "./src/database/dbConnect";
+import newsCategoryFromDbRouter from "./src/routes/newsFromDbRoute";
 process.on("unhandledRejection", (reason) => {
   console.error("Unhandled rejection", reason);
 });
@@ -15,6 +17,7 @@ app.use(
     origin: "*",
   })
 );
+await connectDb(); // conn to db
 //app.use(compression());
 
 /**
@@ -78,15 +81,18 @@ app.use(
 // });
 
 
-app.use("/stream/news", newsCategoryRouter); // path -> /stream/news/:category
+// app.use("/stream/news", newsCategoryRouter); // path -> /stream/news/:category
 
+// get fro mdb
+app.use("/news", newsCategoryFromDbRouter);
 // test endpoint
 app.get("/ping", (_, res) => {
   console.log("Ping route hit !!");
   res.send("pong");
 });
 
+saveNewsToDb.start();
 // if bun is not running after server running... error -> change port
 app.listen(PORT, HOST, () => {
-  console.log(`Server running... on port-> ${PORT}`);  
+  console.log(`Server running... on port-> ${PORT}`);
 });

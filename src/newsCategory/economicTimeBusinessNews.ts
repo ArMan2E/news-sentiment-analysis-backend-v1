@@ -65,7 +65,6 @@ export default async function* economicTimeBusinessNews(signal: AbortSignal) {
       if (filteredResults.length > 0) {
         yield filteredResults;
       }
-      //yield analyzedTrends;
     } catch (error) {
       console.error("Failed to parse record:", error);
     }

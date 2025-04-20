@@ -90,7 +90,7 @@ app.get("/ping", (_, res) => {
   console.log("Ping route hit !!");
   res.send("pong");
 });
-
+//corn job
 saveNewsToDb.start();
 // if bun is not running after server running... error -> change port
 app.listen(PORT, HOST, () => {

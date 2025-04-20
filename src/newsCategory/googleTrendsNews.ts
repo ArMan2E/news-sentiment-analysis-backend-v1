@@ -67,7 +67,6 @@ export default async function googleTrendsNews(signal: AbortSignal) {
     //-------------------
     //filter out nulls
     const filteredResults = analyzedTrends.filter(Boolean);
-  
     if (filteredResults.length > 0) {
       const plainResults = filteredResults.map(item =>
         JSON.parse(JSON.stringify({

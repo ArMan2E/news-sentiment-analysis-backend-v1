@@ -17,7 +17,7 @@ const trendSchema = new mongoose.Schema({
 
 	// Groq Analysis test for now gorq analysis is common 
 	// for different vendors might common out
-	symmary: { type: String },
+	summary: { type: String },
 	sentiment: { type: String },
 	mood: { type: String },
 	bias_level: { type: String },

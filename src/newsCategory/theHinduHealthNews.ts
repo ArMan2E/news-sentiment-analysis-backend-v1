@@ -41,6 +41,7 @@ export default async function* theHinduHealthNews(signal: AbortSignal) {
             
             seenUrlsWithTimestamps.set(cacheKey);
 
+            console.log("inside health endoint func")
             const groqResult = await analyzeNewsWithQroq(
               item.title,
               "The Hindu",

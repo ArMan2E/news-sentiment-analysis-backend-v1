@@ -1,9 +1,7 @@
 import { connectAndStream, fluvio } from "../../lib/fluvio";
-import { SmartModuleType, Offset } from "@fluvio/client";
 import transformTrendData from "../../util/transformRssToJson/transformGoogleRSSJson";
 import { analyzeNewsWithQroq } from "../../util/sentiment-groq";
 import { TTLCache } from "../../util/CacheUtil";
-const PARTITION = 0;
 
 const TTL_DURATION = 10 * 60 * 1000;
 
@@ -23,6 +21,7 @@ export default async function* googleTrendsNews(signal: AbortSignal) {
     const parsedData = JSON.parse(raw); // parse the raw data
     // transform the data !!
     // .items is an array in the parsedData which contains the actual links and data it is mapped then
+    
     const cleanedData = parsedData.items.map(transformTrendData);
     
     const analyzedTrends = await Promise.all(
@@ -39,12 +38,14 @@ export default async function* googleTrendsNews(signal: AbortSignal) {
             return null;// skip analysis
           }
           seenUrlsWithTimestamps.set(cacheKey);
-
+          console.log("Sent for analyzing")
           const groqResult = await analyzeNewsWithQroq(
             item.title,
             item?.source || "Unknown",
             firstNews || ""
           );
+          console.log("Done analyzing")
+
           return { ...item, groqAnalysis: groqResult }; // return item yes to get the links and the source???
           //return { ...groqResult }; // return item ???
         } catch (error) {
@@ -61,7 +62,8 @@ export default async function* googleTrendsNews(signal: AbortSignal) {
 
     //-------------------
     // filter out nulls
-    //const filteredResults = analyzedTrends.filter(Boolean);
+    // const filteredResults = analyzedTrends.filter(Boolean);
+    
     const filteredResults = analyzedTrends.filter(result => {
       return result && result.sentiment !== 'unknown' && result.summary !== "";
     })

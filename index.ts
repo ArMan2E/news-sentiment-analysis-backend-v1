@@ -1,15 +1,5 @@
 import Express from "express";
 import cors from "cors";
-import { Offset, SmartModuleType } from "@fluvio/client";
-import { fluvio, fluvioClient } from "./lib/fluvio";
-import transformTrendData from "./util/transformRssToJson/transformGoogleRSSJson.ts";
-import { analyzeNewsWithQroq } from "./util/sentiment-groq.ts";
-import googleTrendsNews from "./src/newsCategory/googleTrendsNews.ts";
-import economicTimeBusinessNews from "./src/newsCategory/economicTimeBusinessNews.ts";
-import timesOfIndiaScienceNews from "./src/newsCategory/timesOfIndiaScienceNews.ts";
-import timesOfIndiaTechnologyNews from "./src/newsCategory/theHinduTechnologyNews.ts";
-import theHinduTechnologyNews from "./src/newsCategory/theHinduTechnologyNews.ts";
-import theHinduHealthNews from "./src/newsCategory/theHinduHealthNews.ts";
 import newsCategoryRouter from "./src/routes/newsCategoryRoute.ts";
 import compression from "compression";
 process.on("unhandledRejection", (reason) => {
@@ -98,5 +88,5 @@ app.get("/ping", (_, res) => {
 
 // if bun is not running after server running... error -> change port
 app.listen(PORT, HOST, () => {
-  console.log(`Server running... on port-> ${PORT}`);
+  console.log(`Server running... on port-> ${PORT}`);  
 });

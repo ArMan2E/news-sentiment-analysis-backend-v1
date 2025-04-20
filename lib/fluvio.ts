@@ -22,14 +22,20 @@ const createTopic = async (topic: string) => {
 };
 
 const connectAndStream = async (topic: string) => {
-  console.log("Connecting to Fluvio...",topic);
-  const client = await fluvio.connect();
-  const consumer = await client.partitionConsumer(topic, 0);
+  console.log("Connecting to Fluvio...", topic);
+
+    const client = await fluvio.connect();
+    const consumer = await client.partitionConsumer(topic, 0);
+
+      const jsonStreamRecord = await consumer.streamWithConfig(Offset.FromEnd(), {
+        smartmoduleType: SmartModuleType.Map,
+        smartmoduleName: "fluvio/rss-json@0.1.0", // Make sure this SmartModule is registered/ present
+      });
   
-  const jsonStreamRecord = await consumer.streamWithConfig(Offset.FromEnd(), {
-    smartmoduleType: SmartModuleType.Map,
-    smartmoduleName: "fluvio/rss-json@0.1.0", // Make sure this SmartModule is registered/ present
-  });
-  return jsonStreamRecord
+    console.log("Connected and streaming")
+    console.log(jsonStreamRecord);
+    return jsonStreamRecord
+
+
 }
 export { fluvio, fluvioClient, createTopic, connectAndStream };

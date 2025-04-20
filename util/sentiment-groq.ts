@@ -11,7 +11,7 @@ export interface GroqAnalysisResult {
   indicators: string[];
   reasoning: string;
 }
-
+const GROQ_MODEL = "llama3-70b-8192"
 // Rotate through available Groq API keys
 const groqApiKeys: string[] = process.env.GROQ_API_KEYS?.split(",") || [];
 //let keyUsageCount: number[] = new Array(groqApiKeys.length).fill(0);// init the token count with 0
@@ -19,13 +19,21 @@ const groqApiKeys: string[] = process.env.GROQ_API_KEYS?.split(",") || [];
 //buffer api key for a failed req ???
 let bufferGroqApiKeys: string[];
 let currentKeyIndex = 0;
-
+let called = 0;
 //const MAX_REQ_BEFORE_ROTATION = 10;
 
-async function preflightCheckForKey(apiKey: string): Promise<number> {
-  const model = "llama3-70b-8192"
+export async function preflightCheckForKey(apiKey: string): Promise<number> {
+  const payload = {
+    model: GROQ_MODEL,
+    messages: [{
+      role: "user",
+      content: "Reply with just pong"
+    }]
+  }
+  //const model = "llama3-70b-8192"
   try {
-    const response = await axios.get(`https://api.groq.com/openai/v1/models/${model}`,
+    const response = await axios.post(`https://api.groq.com/openai/v1/chat/completions`,
+      payload,
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -33,9 +41,11 @@ async function preflightCheckForKey(apiKey: string): Promise<number> {
         }
       }
     )
-    const remainingTokensPerDay = parseInt(response.headers["x-ratelimit-limit-tokens"])
+    const headers = response.headers;
+    const remainingTokensPerDay = headers["x-ratelimit-limit-tokens"];
+    console.log(`Groq preflight...${apiKey} remaining tokens: ${remainingTokensPerDay}`)
     return remainingTokensPerDay;
-  } catch(error){
+  } catch (error) {
     console.error(`failed to check rate limit for API KEY ${apiKey}`);
     return 0;// if preflight failed, key unavailable fro groq
   }
@@ -46,12 +56,12 @@ async function getLeastUsedKey(): Promise<string> {
   const tokenUsages = await Promise.all(
     groqApiKeys.map(async (apiKey, index) => {
       const remainingTokens = await preflightCheckForKey(apiKey);
-      return {apiKey, remainingTokens, index};
+      return { apiKey, remainingTokens, index };
     })
   )
 
   // sort keys by remaining tokens in desending order
-  tokenUsages.sort((a,b) => b.remainingTokens - a.remainingTokens);
+  tokenUsages.sort((a, b) => b.remainingTokens - a.remainingTokens);
   const selectedKey = tokenUsages[0];// key with most remaining tokens
   bufferGroqApiKeys = tokenUsages.map(apiKey => apiKey.apiKey);
   return selectedKey.apiKey;
@@ -64,7 +74,8 @@ if (groqApiKeys.length === 0) {
 function getNextApiKey() {
   // from second(2) api key as first one is least used already by preflight
   currentKeyIndex = (currentKeyIndex + 2) % groqApiKeys.length;
-  return bufferGroqApiKeys[currentKeyIndex];
+  //return bufferGroqApiKeys[currentKeyIndex];
+  return groqApiKeys[currentKeyIndex];
 }
 
 export async function analyzeNewsWithQroq(
@@ -106,7 +117,7 @@ Return your analysis strictly in JSON format with the exact keys:
 }`;
 
   const payload = {
-    model: "llama3-70b-8192",
+    model: GROQ_MODEL,
     messages: [
       { role: "system", content: prompt },
       { role: "user", content: `Title: ${title}\nSource: ${source}\nContent:${content}` }
@@ -117,10 +128,13 @@ Return your analysis strictly in JSON format with the exact keys:
 
   let attempt = 0;
   const maxAttempts = groqApiKeys.length;
-  console.log(`Attempt ${attempt + 1} using key index ${currentKeyIndex}: ${groqApiKeys[currentKeyIndex]}`);
-  let apiKey = await getLeastUsedKey();// perform preflight
+  //let apiKey = await getLeastUsedKey();// perform preflight
+  //let apiKey = groqApiKeys[currentKeyIndex];
+  
+  
   while (attempt < maxAttempts) {
-    //let apiKey = groqApiKeys[currentKeyIndex];
+    let apiKey = groqApiKeys[currentKeyIndex];
+    console.log(`Attempt ${attempt + 1} using key  ${currentKeyIndex}: ${apiKey} called ${called++}`);
 
     try {
       const response = await axios.post(
@@ -156,11 +170,11 @@ Return your analysis strictly in JSON format with the exact keys:
     } catch (error: any) {
       const status = error.response?.status;
       //const headers = error.response?.headers || {};
-      if (status === 429) {
+      if (status === 429 || status == 503) {
         // from buffer array
         apiKey = getNextApiKey();
         attempt++;// count this an attempt
-        await new Promise(res => setTimeout(res, 500)); // 0.5s delay before retry
+        await new Promise(res => setTimeout(res, 1000)); // 1s delay before retry
 
         continue; // retry again
       } else {

@@ -40,7 +40,6 @@ export const newsCategory = async (req: Request, res: Response) => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Connection", "keep-alive");
-  res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders(); // Flush headers immediately to client to let it know about "Content-Type"
   //let responseMsg: Promise<string | undefined>; // declare outside case block
 
@@ -61,13 +60,16 @@ export const newsCategory = async (req: Request, res: Response) => {
   try {
     for await (const record of streamCategoryFn(signal)) {
       if (signal.aborted) break;
-      // proper SSE format -> ends with \n\n double newline
+      // proper SSE format -> ends with \n\n double newline and starts with `data: `
       const currentHash = JSON.stringify(record);
       if (currentHash !== lastSentHash) {
         res.write(`data: ${currentHash}\n\n`);
         lastSentHash = currentHash;
       }
       // add delay
+      //const testData = JSON.stringify(record);
+      // console.log(record);
+      // res.write(`data: ${JSON.stringify(record)}\n\n`)
       await new Promise((resolve) => setTimeout(resolve, 10000)); // 10s delay
     }
 

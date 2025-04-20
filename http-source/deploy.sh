@@ -31,7 +31,7 @@ create_topics() {
 						echo "Topic ${topic} already exists"
 					else
 						echo "Creating topic ${topic}..."
-						fluvio topic create ${topic}
+						fluvio topic create ${topic} --retention-time '2hr' --segment-size '500 MiB' --dedup --dedup-age '10s'
 					fi
 			else
 				echo "No topic found in ${file}."
@@ -44,7 +44,7 @@ create_topics() {
 
 # main script execution func call
 #create topic
-#create_topics
+create_topics
 #deploy with config
 deploy_configurations
 

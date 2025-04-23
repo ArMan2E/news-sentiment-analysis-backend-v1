@@ -1,0 +1,19 @@
+services:
+  app:
+    container_name: hackzard25-truth-stream
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-9090}:9090"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge

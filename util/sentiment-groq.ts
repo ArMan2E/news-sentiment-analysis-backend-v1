@@ -11,7 +11,7 @@ export interface GroqAnalysisResult {
   indicators: string[];
   reasoning: string;
 }
-const GROQ_MODEL = "llama3-70b-8192"
+const GROQ_MODEL =  process.env.GROQ_API_KEY || "llama3-70b-8192"
 // Rotate through available Groq API keys
 const groqApiKeys: string[] = process.env.GROQ_API_KEYS?.split(",") || [];
 //let keyUsageCount: number[] = new Array(groqApiKeys.length).fill(0);// init the token count with 0

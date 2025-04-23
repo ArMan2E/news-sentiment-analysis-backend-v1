@@ -1,8 +1,8 @@
-import { analyzeNewsWithQroq } from "../../util/sentiment-groq";
-import transformThTechnologyData from "../../util/transformRssToJson/transformThTechnologyRSSJson";
-import { CleanedNewsStruct } from "../../util/transformRssToJson/transformThTechnologyRSSJson";
-import { connectAndStream } from "../../lib/fluvio";
-import { TTLCache } from "../../util/CacheUtil";
+import { analyzeNewsWithQroq } from "../util/sentiment-groq";
+import transformThTechnologyData from "../util/transformRssToJson/transformThTechnologyRSSJson";
+import { CleanedNewsStruct } from "../util/transformRssToJson/transformThTechnologyRSSJson";
+import { connectAndStream } from "../lib/fluvio";
+import { TTLCache } from "../util/CacheUtil";
 // the pointer is important it signifies generator function to yield SSE
 // TTL in millis
 const TTL_DURATION = 10 * 60 * 1000;

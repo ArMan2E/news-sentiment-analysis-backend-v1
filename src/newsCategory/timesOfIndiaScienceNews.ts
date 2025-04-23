@@ -1,8 +1,8 @@
-import { analyzeNewsWithQroq } from "../../util/sentiment-groq";
-import transformTOIScienceData from "../../util/transformRssToJson/transformTOIScienceRssJson";
-import { CleanedNews } from "../../util/transformRssToJson/transformTOIScienceRssJson";
-import { connectAndStream } from "../../lib/fluvio";
-import { TTLCache } from "../../util/CacheUtil";
+import { analyzeNewsWithQroq } from "../util/sentiment-groq";
+import transformTOIScienceData from "../util/transformRssToJson/transformTOIScienceRssJson";
+import { CleanedNews } from "../util/transformRssToJson/transformTOIScienceRssJson";
+import { connectAndStream } from "../lib/fluvio";
+import { TTLCache } from "../util/CacheUtil";
 
 // the pointer is important it signifies generator function to yield SSE
 // abort signal to stop if client disconnects

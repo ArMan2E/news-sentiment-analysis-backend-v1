@@ -1,8 +1,8 @@
-import { analyzeNewsWithQroq } from "../../util/sentiment-groq";
-import transformThHealthData from "../../util/transformRssToJson/transformThHealthRssJson";
-import { CleanedNewsStruct } from "../../util/transformRssToJson/transformThHealthRssJson";
-import { connectAndStream } from "../../lib/fluvio";
-import { TTLCache } from "../../util/CacheUtil";
+import { analyzeNewsWithQroq } from "../util/sentiment-groq";
+import transformThHealthData from "../util/transformRssToJson/transformThHealthRssJson";
+import { CleanedNewsStruct } from "../util/transformRssToJson/transformThHealthRssJson";
+import { connectAndStream } from "../lib/fluvio";
+import { TTLCache } from "../util/CacheUtil";
 const PARTITION = 0;
 const TTL_DURATION = 10 * 60 * 1000;
 

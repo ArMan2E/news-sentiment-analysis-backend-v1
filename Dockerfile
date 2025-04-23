@@ -16,7 +16,8 @@ RUN /bin/bash -c "source ~/.bashrc"
 
 # set path to run commands outside of an interactive shell
 RUN chmod +x /root/.fluvio/bin/* /root/.fvm/bin/*
-
+ENV PATH="$PATH:/root/.fluvio/bin:/root/.fvm/bin"
+RUN fvm current
 
 #set working dir all relative path will be based on this
 WORKDIR /usr/src/app
@@ -35,22 +36,25 @@ RUN cd /temp/prod && bun install --frozen-lockfile --production
 
 #copy node_modules from temp dir
 # then copy all (non-ignored Dockerignore) proj files into the img
-FROM base as prerelease
+FROM base AS prerelease
 COPY --from=install /temp/dev/node_modules node_modules
 COPY . .
 
 #bun env
 ENV NODE_ENV=production
-RUN bun run build
+RUN bun run build --target=node
 
 #Only production node_modules are used
 FROM base AS release
 COPY --from=install /temp/prod/node_modules node_modules
+COPY --from=prerelease /usr/src/app/src ./src
 COPY --from=prerelease /usr/src/app/index.ts .
 COPY --from=prerelease /usr/src/app/package.json .
 
 # already provided non root user by bun
-USER bun
+COPY ./entrypoint.sh ./
+RUN chmod 777 ./entrypoint.sh
+RUN ls -al /usr/src/app/
+
 EXPOSE 9090/tcp
-RUN chmod +x entrypoint.sh
 ENTRYPOINT [ "./entrypoint.sh" ]

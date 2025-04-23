@@ -1,9 +1,9 @@
-import economicTimeBusinessNews from "../src/newsCategory/googleTrendsNews";
-import googleTrendsNews from "../src/newsCategory/googleTrendsNews";
-import theHinduHealthNews from "../src/newsCategory/theHinduHealthNews";
-import theHinduTechnologyNews from "../src/newsCategory/theHinduTechnologyNews";
-import timesOfIndiaScienceNews from "../src/newsCategory/timesOfIndiaScienceNews";
-import { TrendModel } from "../src/models/trendModel";
+import economicTimeBusinessNews from "../newsCategory/googleTrendsNews";
+import googleTrendsNews from "../newsCategory/googleTrendsNews";
+import theHinduHealthNews from "../newsCategory/theHinduHealthNews";
+import theHinduTechnologyNews from "../newsCategory/theHinduTechnologyNews";
+import timesOfIndiaScienceNews from "../newsCategory/timesOfIndiaScienceNews";
+import { TrendModel } from "../models/trendModel";
 // import generateHash from "./genHash.ts";
 import cron from "node-cron";
 
@@ -34,5 +34,5 @@ const saveNewsToDbJob = cron.schedule("*/2 * * * * ", async () => {
 },{
 	scheduled: true // automatically runs
 })
-// saveNewsToDbJob.start();
-export default saveNewsToDbJob;
+saveNewsToDbJob.start();
+// export default saveNewsToDbJob;

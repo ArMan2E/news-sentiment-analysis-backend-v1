@@ -1,9 +1,9 @@
-import { connectAndStream, fluvio } from "../../lib/fluvio";
-import transformTrendData from "../../util/transformRssToJson/transformGoogleRSSJson";
-import { analyzeNewsWithQroq } from "../../util/sentiment-groq";
-import { TTLCache } from "../../util/CacheUtil";
+import { connectAndStream, fluvio } from "../lib/fluvio";
+import transformTrendData from "../util/transformRssToJson/transformGoogleRSSJson";
+import { analyzeNewsWithQroq } from "../util/sentiment-groq";
+import { TTLCache } from "../util/CacheUtil";
 import { TrendModel } from "../models/trendModel";
-import {generateNewsHash} from "../../util/genHash"
+import {generateNewsHash} from "../util/genHash"
 import corn from "node-cron";
 
 const TTL_DURATION = 10 * 60 * 1000;

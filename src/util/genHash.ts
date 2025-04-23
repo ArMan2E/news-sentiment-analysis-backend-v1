@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import NewsHash from "../src/models/newsHash";
+import NewsHash from "../models/newsHash";
 
 export function generateNewsHash(title: string, headlines: string[]): string {
 	const combined = title + headlines.join(" ");

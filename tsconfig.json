@@ -1,8 +1,14 @@
 {
   "compilerOptions": {
+    //work-around
+    "paths": {
+      "@fluvio/client":[
+        "./node_modules/@fluvio/client/src/index.ts"
+      ]
+    },
     "module": "ESNext",
     "allowSyntheticDefaultImports": true,
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "sourceMap": true,
     // Enable latest features
     "lib": [
@@ -13,7 +19,7 @@
     "moduleDetection": "force",
     //"jsx": "react-jsx",
     "allowJs": true,
-    "outDir": "dist",    
+    "outDir": "dist",
     // Bundler mode
     "moduleResolution": "Node",
     "allowImportingTsExtensions": true,
@@ -28,5 +34,5 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
-  }  
+  }
 }

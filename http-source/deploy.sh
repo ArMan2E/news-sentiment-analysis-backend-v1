@@ -10,8 +10,10 @@ deploy_configurations() {
 	for file in ${HTTP_SOURCE_DIR}/*.yaml; do
 		if [ -f "$file" ]; then
 			echo "Deploying ${file}..."
-			echo "Command : cdk deploy start --ipkg ${PACKAGE_IPKG} -c ${file}"
-			cdk deploy start --ipkg ${PACKAGE_IPKG} -c ${file}
+			# echo "Command : cdk deploy start --ipkg ${PACKAGE_IPKG} -c ${file}"
+			# cdk deploy start --ipkg ${PACKAGE_IPKG} -c ${file}
+			fluvio cloud connector create --config ${file} 
+
 		else
 			echo "Skipping ${file}."
 		fi
@@ -44,7 +46,7 @@ create_topics() {
 
 # main script execution func call
 #create topic
-create_topics
+#create_topics
 #deploy with config
 deploy_configurations
 

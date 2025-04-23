@@ -2,7 +2,7 @@ apiVersion: 0.1.0
 
 meta:
   version: 0.4.3
-  name: rss-TOI-science
+  name: rss-toi-science
   type: http-source
   topic: rss-toi-science-topic
   create-topic: true

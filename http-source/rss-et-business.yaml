@@ -2,7 +2,7 @@
 apiVersion: 0.1.0
 meta:
   version: 0.4.3
-  name: rss-ET-business
+  name: rss-et-business
   type: http-source
   topic: rss-et-business-topic
   create-topic: true

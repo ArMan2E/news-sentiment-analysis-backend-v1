@@ -1,7 +1,8 @@
+#name must be lower case
 apiVersion: 0.1.0
 meta:
   version: 0.4.3
-  name: rss-TH-health
+  name: rss-th-health
   type: http-source
   topic: rss-th-health-topic
   create-topic: true

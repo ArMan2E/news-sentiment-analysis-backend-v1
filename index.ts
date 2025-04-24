@@ -1,6 +1,6 @@
 import Express from "express";
 import cors from "cors";
-// import saveNewsToDb from "./src/util/cron-job"
+import saveNewsToDb from "./src/util/cron-job"
 // import newsCategoryRouter from "./src/routes/newsCategoryRoute.ts";
 import connectDb from "./src/database/dbConnect";
 import newsCategoryFromDbRouter from "./src/routes/newsFromDbRoute";
@@ -27,7 +27,7 @@ app.get("/ping", (_, res) => {
   res.send("pong");
 });
 //corn job
-// saveNewsToDb.start();
+saveNewsToDb.start();
 // if bun is not running after server running... error -> change port
 app.listen(PORT, HOST, () => {
   console.log(`Server running... on port-> ${PORT}`);

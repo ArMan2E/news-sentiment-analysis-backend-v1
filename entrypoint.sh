@@ -10,4 +10,4 @@ fluvio cloud login --email $FLUVIO_CLOUD_EMAIL --password $FLUVIO_CLOUD_PASSWORD
 fluvio cloud cluster sync
 
 #start the app
-bun run index.ts
+exec bun run dist/index.js

@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
     //work-around
-    "paths": {
-      "@fluvio/client":[
-        "./node_modules/@fluvio/client/src/index.ts"
-      ]
-    },
+    // "paths": {
+    //   "@fluvio/client":[
+    //     "./node_modules/@fluvio/client/src/index.ts"
+    //   ]
+    // },
     "module": "ESNext",
     "allowSyntheticDefaultImports": true,
     "noImplicitAny": false,

@@ -35,4 +35,4 @@ const saveNewsToDbJob = cron.schedule("*/2 * * * * ", async () => {
 	scheduled: true // automatically runs
 })
 saveNewsToDbJob.start();
-// export default saveNewsToDbJob;
+export default saveNewsToDbJob;

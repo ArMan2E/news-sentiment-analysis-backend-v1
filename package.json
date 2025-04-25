@@ -5,7 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun run index.ts",
-    "build": "bun build index.ts --target=node --outdir=dist --sourcemap "
+    "build": "bun build index.ts --target=node --outdir=dist --no-minify --sourcemap "
   },
   "keywords": [],
   "author": "",

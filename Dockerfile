@@ -25,18 +25,18 @@ ENV PATH="$PATH:/root/.fluvio/bin:/root/.fvm/bin"
 WORKDIR /workspace
 
 # --- copy manifests first for cache ---------------------------------
-COPY package.json package-lock.json ./
+COPY package.json  ./
 
 # install ALL deps (dev + prod) so linux‑x64‑napi*.node is fetched
 # RUN bun install   # uncomment if you really need it
 
-RUN npm ci          # deterministic & faster
+# RUN npm ci          # deterministic & faster
 
-# Bun install only if you have Bun‑specific deps
+RUN bun install --production 
 
 # --- copy sources & build ------------------------------------------
 COPY . .
-RUN bun run build   # ensure this writes to dist/
+RUN bun build index.ts --target=node --outdir=dist --no-minify --sourcemap --format=cjs
 
 ######################## 2️⃣  RUNTIME (STAGE) ########################
 FROM oven/bun:1.2.10 AS runtime
@@ -53,10 +53,6 @@ COPY --from=builder /workspace/dist/         .
 COPY --from=builder /workspace/node_modules ./node_modules
 COPY --from=builder /workspace/package.json .
 
-# ---- OPTION B : copy only the native binary (smaller image) -------
-# Uncomment this block and delete OPTION A’s node_modules copy if
-# you prefer a ~110 MB image.
-#
 COPY --from=builder \
      /workspace/node_modules/@fluvio/client/dist/linux/*.node \
      /app/linux/
@@ -66,9 +62,10 @@ ENV NODE_PATH="/app/linux:${NODE_PATH}"
 # -------------------------------------------------------------------
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod 755 /app/entrypoint.sh
+
 ENTRYPOINT ["/app/entrypoint.sh"]
 
-EXPOSE 9090
+EXPOSE 8080
 
 
 # #official and updated bun image 

@@ -17,7 +17,14 @@ app.use(
     origin: "*",
   })
 );
-await connectDb(); // conn to db
+//for cjs
+async function start() {
+  await connectDb(); // connect to DB
+  // other logic
+}
+
+start();
+// await connectDb(); // conn to db
 //app.use(compression());
 
 app.use("/news", newsCategoryFromDbRouter);
@@ -30,6 +37,7 @@ app.get("/ping", (_, res) => {
 saveNewsToDb.start();
 // if bun is not running after server running... error -> change port
 app.listen(PORT, HOST, () => {
-  console.log(`Server running... on port-> ${PORT}`);
+  
+  console.log(`Server running... on port-> ${PORT} and host ${HOST}`);
 });
 

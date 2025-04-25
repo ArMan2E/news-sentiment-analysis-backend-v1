@@ -18,7 +18,7 @@ const newsCategoryMap: Record<string, (signal: AbortSignal) => Promise<void>> = 
 // 15 mins like jenkis 
 console.log("Will start cron job")
 //working fine for 2min setup
-const saveNewsToDbJob = cron.schedule("*/2 * * * * ", async () => {
+const saveNewsToDbJob = cron.schedule("*/15 * * * * * ", async () => {
 	console.log("Cron job started news ingestion job");
 	const controller = new AbortController();
 	const { signal } = controller;
@@ -27,7 +27,7 @@ const saveNewsToDbJob = cron.schedule("*/2 * * * * ", async () => {
 			await newsIngestionFunc(signal);
 			console.log("Finished corn for ", category);
 		} catch (error) {
-			console.log(`Error in category ${category}`);
+			console.log(`Error in category ${category}, ${error}`);
 		}
 	}
 	console.log("News collection completed ");

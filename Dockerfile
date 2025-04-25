@@ -28,10 +28,11 @@ WORKDIR /workspace
 COPY package.json package-lock.json ./
 
 # install ALL deps (dev + prod) so linux‑x64‑napi*.node is fetched
+# RUN bun install   # uncomment if you really need it
+
 RUN npm ci          # deterministic & faster
 
 # Bun install only if you have Bun‑specific deps
-RUN bun install   # uncomment if you really need it
 
 # --- copy sources & build ------------------------------------------
 COPY . .
@@ -39,11 +40,16 @@ RUN bun run build   # ensure this writes to dist/
 
 ######################## 2️⃣  RUNTIME (STAGE) ########################
 FROM oven/bun:1.2.10 AS runtime
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 ENV NODE_ENV=production
+COPY --from=builder /root/.fluvio /root/.fluvio
+COPY --from=builder /root/.fvm	/root/.fvm
 
+ENV PATH="/root/.fluvio/bin:/root/.fvm/bin:$PATH"
 # ---- OPTION A : copy full node_modules (simple, ~180 MB image) -----
-COPY --from=builder /workspace/dist         ./dist
+COPY --from=builder /workspace/dist/         . 
 COPY --from=builder /workspace/node_modules ./node_modules
 COPY --from=builder /workspace/package.json .
 
@@ -53,8 +59,9 @@ COPY --from=builder /workspace/package.json .
 #
 COPY --from=builder \
      /workspace/node_modules/@fluvio/client/dist/linux/*.node \
-     /app/native/
-ENV NODE_PATH="/app/native:${NODE_PATH}"
+     /app/linux/
+ARG NODE_PATH
+ENV NODE_PATH="/app/linux:${NODE_PATH}"
 
 # -------------------------------------------------------------------
 COPY entrypoint.sh /app/entrypoint.sh

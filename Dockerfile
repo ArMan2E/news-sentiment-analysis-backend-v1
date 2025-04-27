@@ -1,22 +1,22 @@
-######################## 1️⃣  BUILDER (STAGE) ########################
-FROM node:22-slim AS builder  
+FROM node:23-slim AS builder 
 
-RUN apt-get update && \
-	apt-get install -y curl unzip build-essential ca-certificates && \
+RUN apt-get update --fix-missing
+
+RUN apt-get install -y curl unzip ca-certificates && \
 	rm -rf /var/lib/apt/lists/*
 
-# --- Bun ------------------------------------------------------------
+#Bun
 RUN curl -fsSL https://bun.sh/install | bash
 ENV PATH="/root/.bun/bin:$PATH"
 
-# --- Fluvio CLI (build‑time only) -----------------------------------
+# --- Fluvio CLI (build‑time only) 
 RUN curl -fsSL https://hub.infinyon.cloud/install/install.sh?ctx=dc | bash
 
 RUN echo 'export PATH="$HOME/.fluvio/bin:$HOME/.fvm/bin:$PATH"' >> ~/.bashrc && \
 echo 'source "${HOME}/.fvm/env"' >> ~/.bashrc
 
 # source .bashrc for env loading
-RUN /bin/bash -c "source ~/.bashrc"
+# RUN /bin/bash -c "source ~/.bashrc"
 
 # set path to run commands outside of an interactive shell
 RUN chmod +x /root/.fluvio/bin/* /root/.fvm/bin/*
@@ -26,6 +26,7 @@ WORKDIR /workspace
 
 # --- copy manifests first for cache ---------------------------------
 COPY package.json  ./
+COPY ./public/ ./public
 
 # RUN npm ci          # deterministic & faster
 
@@ -33,7 +34,7 @@ RUN bun install --production
 
 # --- copy sources & build ------------------------------------------
 COPY . .
-RUN bun build index.ts --target=node --outdir=dist --no-minify --sourcemap --format=cjs
+RUN bun build index.ts --target=node --outdir=dist --no-minify --format=cjs
 
 #  RUNTIME (STAGE)
 FROM oven/bun:1.2.10 AS runtime
@@ -49,6 +50,9 @@ ENV PATH="/root/.fluvio/bin:/root/.fvm/bin:$PATH"
 COPY --from=builder /workspace/dist/         . 
 COPY --from=builder /workspace/node_modules ./node_modules
 COPY --from=builder /workspace/package.json .
+COPY ./public/ ./public
+
+RUN chmod 755 /app/public/index.html
 
 COPY --from=builder \
      /workspace/node_modules/@fluvio/client/dist/linux/*.node \
@@ -62,3 +66,4 @@ RUN chmod 755 /app/entrypoint.sh
 ENTRYPOINT ["/app/entrypoint.sh"]
 
 EXPOSE 8080
+EXPOSE 5000

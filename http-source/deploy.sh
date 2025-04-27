@@ -33,7 +33,7 @@ create_topics() {
 						echo "Topic ${topic} already exists"
 					else
 						echo "Creating topic ${topic}..."
-						fluvio topic create ${topic} --retention-time '2hr' --segment-size '500 MiB' --dedup --dedup-age '10s'
+						fluvio topic create ${topic} --retention-time '24hr' --segment-size '2000 MiB' --dedup --dedup-age '10s'
 					fi
 			else
 				echo "No topic found in ${file}."

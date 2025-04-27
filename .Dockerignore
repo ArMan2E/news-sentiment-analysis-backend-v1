@@ -9,4 +9,6 @@ Dockerfile
 *.md
 *.ts
 *.tsx
-./dist/*
+eng.traineddata
+*:Zone.Identifier
+http-source/

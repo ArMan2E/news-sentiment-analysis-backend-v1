@@ -3,13 +3,14 @@ import transformThTechnologyData from "../util/transformRssToJson/transformThTec
 import { CleanedNewsStruct } from "../util/transformRssToJson/transformThTechnologyRSSJson";
 import { connectAndStream } from "../lib/fluvio";
 import { TTLCache } from "../util/CacheUtil";
+import { TrendModel } from "../models/trendModel";
 // the pointer is important it signifies generator function to yield SSE
 // TTL in millis
-const TTL_DURATION = 10 * 60 * 1000;
 
+const TTL_DURATION = 10 * 60 * 1000;
 const seenUrlsWithTimestamps = new TTLCache(TTL_DURATION);
 
-export default async function* theHinduTechnologyNews(signal: AbortSignal) {
+export default async function theHinduTechnologyNews(signal: AbortSignal) {
   const topic = "rss-th-technology-topic";
   const jsonStreamRecord = await connectAndStream(topic);
 
@@ -48,22 +49,27 @@ export default async function* theHinduTechnologyNews(signal: AbortSignal) {
 
           } catch (error) {
             console.warn("Failure to analyze with groq...", error);
-            return {
-              sentiment: "unknown",
-              mood: "unknown",
-              summary: "",
-              reasoning: "Analysis failed",
-            };
+            return null;
           }
         })
       );
 
-      const filteredResults = analyzedTrends.filter(result =>
-        result && result.sentiment !== "unknown" && result.summary !== ""
-      );
+      const filteredResults = analyzedTrends.filter(Boolean);
 
       if (filteredResults.length > 0) {
-        yield filteredResults;
+        const plainResults = filteredResults.map(item => {
+          JSON.parse(JSON.stringify({
+            ...item,
+            ...item?.groqAnalysis,
+            category: "business",
+          }))
+        });
+        try {
+          await TrendModel.insertMany(plainResults, { ordered: false });
+          console.log(`DB inserted ${filteredResults.length} no. of data technology`);
+        } catch (error) {
+          console.error(`DB error while inserting ${error}`);
+        }
       }
     } catch (error) {
       console.error("Failed to parse record:", error);

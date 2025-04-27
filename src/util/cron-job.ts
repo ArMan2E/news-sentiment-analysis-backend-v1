@@ -4,7 +4,6 @@ import theHinduHealthNews from "../newsCategory/theHinduHealthNews";
 import theHinduTechnologyNews from "../newsCategory/theHinduTechnologyNews";
 import timesOfIndiaScienceNews from "../newsCategory/timesOfIndiaScienceNews";
 import { TrendModel } from "../models/trendModel";
-// import generateHash from "./genHash.ts";
 import cron from "node-cron";
 
 // record is a type of K,V map generatorFunc names with [function*]

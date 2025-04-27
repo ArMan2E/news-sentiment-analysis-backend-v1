@@ -3,4 +3,6 @@ node_modules
 *.log
 *.json
 .vscode/*
-dist
+dist/
+uploads/
+eng.traineddata

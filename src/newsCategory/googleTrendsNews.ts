@@ -1,4 +1,4 @@
-import { connectAndStream, fluvio } from "../lib/fluvio";
+import { connectAndStream } from "../lib/fluvio";
 import transformTrendData from "../util/transformRssToJson/transformGoogleRSSJson";
 import { analyzeNewsWithQroq } from "../util/sentiment-groq";
 import { TTLCache } from "../util/CacheUtil";
@@ -7,10 +7,6 @@ import {generateNewsHash} from "../util/genHash"
 import corn from "node-cron";
 
 const TTL_DURATION = 10 * 60 * 1000;
-type NewsItem = {
-  title: string;
-  news: { title: string }[]; // Each news object contains a title
-};
 const seenUrlsWithTimestamps = new TTLCache(TTL_DURATION);
 
 // no try scatch !!!!
@@ -77,7 +73,7 @@ export default async function googleTrendsNews(signal: AbortSignal) {
       );
       try {
         await TrendModel.insertMany(plainResults , { ordered: false });
-        console.log(`DB inserted ${filteredResults.length} no. of data`);
+        console.log(`DB inserted ${filteredResults.length} no. of data breaking`);
       } catch (error) {
         console.error(`DB error while inserting ${error}`);
       }

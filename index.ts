@@ -4,6 +4,8 @@ import saveNewsToDb from "./src/util/cron-job"
 // import newsCategoryRouter from "./src/routes/newsCategoryRoute.ts";
 import connectDb from "./src/database/dbConnect";
 import newsCategoryFromDbRouter from "./src/routes/newsFromDbRoute";
+import groqChatBotRoute from "./src/routes/groqChatBot";
+
 process.on("unhandledRejection", (reason) => {
   console.error("Unhandled rejection", reason);
 });
@@ -33,11 +35,13 @@ app.get("/ping", (_, res) => {
   console.log("Ping route hit !!");
   res.send("pong");
 });
+app.use("/analyze", groqChatBotRoute)
+
+
 //corn job
 saveNewsToDb.start();
 // if bun is not running after server running... error -> change port
-app.listen(PORT, HOST, () => {
-  
+app.listen(PORT, HOST, () => {  
   console.log(`Server running... on port-> ${PORT} and host ${HOST}`);
 });
 

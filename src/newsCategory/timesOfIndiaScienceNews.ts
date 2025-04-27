@@ -3,13 +3,13 @@ import transformTOIScienceData from "../util/transformRssToJson/transformTOIScie
 import { CleanedNews } from "../util/transformRssToJson/transformTOIScienceRssJson";
 import { connectAndStream } from "../lib/fluvio";
 import { TTLCache } from "../util/CacheUtil";
+import { TrendModel } from "../models/trendModel";
 
 // the pointer is important it signifies generator function to yield SSE
 // abort signal to stop if client disconnects
 const TTL_DURATION = 10 * 60 * 1000;
-
 const seenUrlsWithTimestamps = new TTLCache(TTL_DURATION);
-export default async function* timesOfIndiaScienceNews(signal: AbortSignal) {
+export default async function timesOfIndiaScienceNews(signal: AbortSignal) {
   // name of the topic
   const topic = "rss-toi-science-topic";
   const jsonStreamRecord = await connectAndStream(topic);
@@ -48,22 +48,27 @@ export default async function* timesOfIndiaScienceNews(signal: AbortSignal) {
             return { ...item, groqAnalysis: groqResult };
           } catch (error) {
             console.warn("Failure to analyze with groq..", error);
-            return {
-              sentiment: "unknown",
-              mood: "unknown",
-              summary: "",
-              reasoning: "Analysis failed",
-            };
+            return null;
           }
         })
       );
 
-      const filteredResults = analyzedTrends.filter(result => {
-        return result && result.sentiment !== 'unknown' && result.summary !== "";
-      })
-      //console.log(stringified);
+      const filteredResults = analyzedTrends.filter(Boolean);
+
       if (filteredResults.length > 0) {
-        yield filteredResults;
+        const plainResults = filteredResults.map(item => {
+          JSON.parse(JSON.stringify({
+            ...item,
+            ...item?.groqAnalysis,
+            category: "business",
+          }))
+        });
+        try {
+          await TrendModel.insertMany(plainResults, { ordered: false });
+          console.log(`DB inserted ${filteredResults.length} no. of data science`);
+        } catch (error) {
+          console.error(`DB error while inserting ${error}`);
+        }
       }
     } catch (error) {
       console.error("Failed to parse record:", error);

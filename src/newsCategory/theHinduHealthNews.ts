@@ -3,14 +3,14 @@ import transformThHealthData from "../util/transformRssToJson/transformThHealthR
 import { CleanedNewsStruct } from "../util/transformRssToJson/transformThHealthRssJson";
 import { connectAndStream } from "../lib/fluvio";
 import { TTLCache } from "../util/CacheUtil";
-const PARTITION = 0;
-const TTL_DURATION = 10 * 60 * 1000;
+import { TrendModel } from "../models/trendModel";
 
+const TTL_DURATION = 10 * 60 * 1000;
 const seenUrlsWithTimestamps = new TTLCache(TTL_DURATION);
 
 
 // the pointer is important it signifies generator function to yield SSE
-export default async function* theHinduHealthNews(signal: AbortSignal) {
+export default async function theHinduHealthNews(signal: AbortSignal) {
   // name of the topic
   const topic = "rss-th-health-topic";
 
@@ -41,7 +41,7 @@ export default async function* theHinduHealthNews(signal: AbortSignal) {
             
             seenUrlsWithTimestamps.set(cacheKey);
 
-            console.log("inside health endoint func")
+            // console.log("inside health endoint func")
             const groqResult = await analyzeNewsWithQroq(
               item.title,
               "The Hindu",
@@ -50,22 +50,26 @@ export default async function* theHinduHealthNews(signal: AbortSignal) {
             return { ...item, groqAnalysis: groqResult };
           } catch (error) {
             console.warn("Failure to analyze with groq...", error);
-            return {
-              sentiment: "unknown",
-              mood: "unknown",
-              summary: "",
-              reasoning: `Analysis failed for news ${item.description} because ${error}`,
-            }
+            return null;              
           }
         })
       )
-      //console.log(analyzedTrends);
-     // const filteredResults = analyzedTrends.filter(Boolean);
-      const filteredResults = analyzedTrends.filter(result => {
-        return result && result.sentiment !== 'unknown' && result.summary !== "";
-      })
+     const filteredResults = analyzedTrends.filter(Boolean);
+      
       if (filteredResults.length > 0) {
-        yield filteredResults;
+        const plainResults = filteredResults.map(item => {
+          JSON.parse(JSON.stringify({
+            ...item,
+            ...item?.groqAnalysis,
+            category: "business",
+          }))
+        });
+        try {
+          await TrendModel.insertMany(plainResults, { ordered: false });
+          console.log(`DB inserted ${filteredResults.length} no. of data health`);
+        } catch (error) {
+          console.error(`DB error while inserting ${error}`);
+        }
       }
     } catch (error) {
       console.error("Failed to parse record:", error);

@@ -38,7 +38,10 @@ RUN bun build index.ts --target=node --outdir=dist --no-minify --format=cjs
 
 #  RUNTIME (STAGE)
 FROM oven/bun:1.2.10 AS runtime
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update --fix-missing && apt-get install -y \
+     ca-certificates \
+     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 ENV NODE_ENV=production
@@ -51,7 +54,8 @@ COPY --from=builder /workspace/dist/         .
 COPY --from=builder /workspace/node_modules ./node_modules
 COPY --from=builder /workspace/package.json .
 COPY ./public/ ./public
-
+RUN mkdir -p /app/uploadImg 
+RUN chmod -R 777 /app/uploadImg
 RUN chmod 755 /app/public/index.html
 
 COPY --from=builder \
@@ -59,7 +63,6 @@ COPY --from=builder \
      /app/linux/
 ARG NODE_PATH
 ENV NODE_PATH="/app/linux:${NODE_PATH}"
-
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod 755 /app/entrypoint.sh
 

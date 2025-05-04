@@ -7,10 +7,10 @@ interface FileWithOriginalname extends Express.Multer.File {
 	originalname: string;
 }
 
-// Use OS temp directory instead of a local uploads folder
 const storage = multer.diskStorage({
 	destination: (_req, _file, cb) => {
-		cb(null, os.tmpdir());
+		const uploadDir = './uploadImg';
+		cb(null,uploadDir);
 	},
 	filename: (_req, file, cb) => {
 		cb(null, Date.now() + path.extname(file.originalname));

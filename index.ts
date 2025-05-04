@@ -64,11 +64,11 @@ app.get("/ping", (_, res) => {
   console.log("Ping route hit !!");
   res.send("pong");
 });
-app.use("/analyze", groqChatBotRoute)
+app.use("/api", groqChatBotRoute)
 
 app.use(Express.static('./public'));
 app.get("*", (_, res) => {
-  res.sendFile('./public/index.html');
+  res.sendFile('index.html', {root: 'public'});
 });
 //corn job
 saveNewsToDb.start();
